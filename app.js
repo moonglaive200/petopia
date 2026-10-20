@@ -102,7 +102,7 @@ function lobby() {
   document.querySelector("#credits").onclick = () =>
     showModal(
       "만든 사람들",
-      "기획 · 너와 나<br>개발 · Codex<br>폰트 · Neo둥근모 / SIL OFL 1.1<br>야옹 · cat-ccnotify-hook / MIT<br>HEX FINALE · 네가 제공한 게임과 음악<br><br>자세한 출처는 저장소의 ASSETS.md에 남겼어.",
+      "기획 · 승식<br>개발 · Codex<br>폰트 · Neo둥근모 / SIL OFL 1.1<br>야옹사운드 · cat-ccnotify-hook / MIT<br>HEX FINALE · 승식<br><br>자세한 출처는 저장소의 ASSETS.md에 남겼어.",
     );
 }
 function showModal(title, body) {
