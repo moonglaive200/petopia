@@ -52,7 +52,7 @@ Choose one of three independent slots, then 춘배. 오레오 is locked as under
 
 ## Assets and limits
 
-See [ASSETS.md](ASSETS.md) and `licenses/` for audio/font provenance. All distributed assets load locally. The chat's reference background image still needs its actual PNG/JPG file to become the shared default; Settings can apply it locally now.
+See [ASSETS.md](ASSETS.md) and `licenses/` for audio/font provenance. All distributed assets load locally. The user-provided village illustration is included as the shared default lobby background. Settings can override it for this browser or restore the default.
 
 This is a playable single-player prototype; saving uses localStorage, not a server economy or anti-cheat system. Numeric balance is centralized in `engine.js` and can be tuned after playtesting. Existing v1 slots migrate automatically; old debt becomes a five-day loan.
 

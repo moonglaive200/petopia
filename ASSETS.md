@@ -32,5 +32,5 @@ All game assets are served locally; normal play does not request third-party CDN
 ## Background and pixel sprites
 
 - Cat sprites, dungeon enemies, rooms, procedural park background and arcade illustrations are drawn in code for this game.
-- The reference lobby illustration was visible in the conversation but was not available as a downloadable PNG/JPG in the execution workspace. It has **not** been copied into the repository or silently replaced with a generated imitation.
-- Settings → 로비 배경 선택 accepts the original image from the player's computer, resizes it to at most 1920px wide, and stores it for this browser. This local choice is not automatically shared with other devices. To make the illustration the distributed default, supply its actual image file and include it as a repository asset in a follow-up.
+- Default lobby illustration: `assets/lobby.png`, extracted unchanged from the user-supplied archive `행복한 마을의 동물 친구들.zip`. This is the exact provided image, not a generated imitation.
+- Settings → 로비 배경 선택 optionally overrides the shared default for this browser. Resetting the background returns to the provided village image.

@@ -85,9 +85,9 @@ document.querySelector("#home").onclick = (e) => {
   lobby();
 };
 function applyBackground() {
-  document.body.classList.toggle("custom-bg", !!customBackground);
+  document.body.classList.add("custom-bg");
   document.querySelector("#lobbyBackground").style.backgroundImage =
-    customBackground ? `url("${customBackground}")` : "";
+    `url("${customBackground || "assets/lobby.png"}")`;
 }
 applyBackground();
 function lobby() {
@@ -120,7 +120,7 @@ function notice(message) {
 }
 function settings() {
   if (modal.open) modal.close();
-  modal.innerHTML = `<h2>설정</h2><div class="setting">야옹·효과음<button id="toggleSound">${sound ? "켜짐" : "꺼짐"}</button></div><div class="setting">배경 움직임<button id="toggleMotion">${motion ? "켜짐" : "꺼짐"}</button></div><div class="setting"><label for="backgroundFile">로비 배경 선택 (PNG/JPG)<br><small>채팅에 보내준 이미지를 선택하면 돼.</small></label><input type="file" id="backgroundFile" accept="image/png,image/jpeg,image/webp"></div><button class="text-button" id="resetBackground">기본 도트 배경으로</button><div class="setting">저장 데이터 백업<button id="exportSave">내려받기</button></div><label class="setting">저장 데이터 가져오기<input type="file" id="importSave" accept="application/json"></label><p class="note">진행은 현재 브라우저에 저장돼. 파일 실행과 웹 주소의 저장은 별개야.</p><button class="btn primary" id="closeSettings">완료</button>`;
+  modal.innerHTML = `<h2>설정</h2><div class="setting">야옹·효과음<button id="toggleSound">${sound ? "켜짐" : "꺼짐"}</button></div><div class="setting">배경 움직임<button id="toggleMotion">${motion ? "켜짐" : "꺼짐"}</button></div><div class="setting"><label for="backgroundFile">로비 배경 선택 (PNG/JPG)<br><small>다른 이미지로 바꾸고 싶을 때 선택해 줘.</small></label><input type="file" id="backgroundFile" accept="image/png,image/jpeg,image/webp"></div><button class="text-button" id="resetBackground">기본 마을 배경으로</button><div class="setting">저장 데이터 백업<button id="exportSave">내려받기</button></div><label class="setting">저장 데이터 가져오기<input type="file" id="importSave" accept="application/json"></label><p class="note">진행은 현재 브라우저에 저장돼. 파일 실행과 웹 주소의 저장은 별개야.</p><button class="btn primary" id="closeSettings">완료</button>`;
   modal.querySelector("#toggleSound").onclick = (e) => {
     toggleSound();
     e.target.textContent = sound ? "켜짐" : "꺼짐";
