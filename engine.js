@@ -258,6 +258,7 @@
     influence: 0,
     work: 0,
     feed: 0,
+    pet: 0,
     gift: 0,
     talk: 0,
     date: 0,
@@ -606,6 +607,13 @@
   function happy(s, n) {
     s.happiness = Math.max(0, Math.min(100, s.happiness + n));
     if (!s.happiness) s.hospital = true;
+  }
+  function pet(s) {
+    if (s.daily.pet >= 1) return null;
+    const before = s.happiness;
+    s.daily.pet = 1;
+    happy(s, 5);
+    return s.happiness - before;
   }
   function debt(s) {
     return s.loans.reduce((a, l) => a + l.amount, 0);
@@ -1457,6 +1465,7 @@
     bonus,
     reward,
     happy,
+    pet,
     debt,
     loanLimit,
     takeLoan,
