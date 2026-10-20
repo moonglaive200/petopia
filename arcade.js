@@ -1,19 +1,23 @@
 function renderArcade() {
+  const s = player();
   gameShell(
-    `<div class="neon-lobby">${title("OPEN ALL NIGHT · CLOSED WHEN SLEEPY", "방앗간 ARCADE", "집사는 여길 그냥 방앗간이라고 부른다.")}<div class="neon-sign">MEOW • PLAY • REPEAT</div><div class="destination-grid three"><button class="destination" data-arcade="claw"><span>♙</span><h2>인형뽑기</h2><p>직접 집게 조작<br>다이아 · 장난감 · 츄르</p></button><button class="destination" data-arcade="rhythm" disabled><span>♫</span><h2>냥냥비트 🔒</h2><p>개발 중 · 입장 불가</p></button><button class="destination" data-arcade="hex"><span>⬡</span><h2>오락하기!</h2><p>네가 만든 HEX FINALE<br>큰 고양이와 작은 고양이</p></button></div><p class="note">산책 입장 때 기력 25를 사용했어. 각 게임은 금화 참가비만 사용. 나가거나 새로고침하면 진행 중인 판은 종료돼.</p></div>`,
+    `<div class="neon-lobby">${title("OPEN ALL NIGHT", "방앗간 ARCADE", "입장하면 행복도 +5! 추가 기력 없이 즐겨보자.")}<div class="neon-sign">MEOW • PLAY • REPEAT</div><div class="destination-grid three"><button class="destination" data-arcade="claw"><span>♙</span><h2>인형뽑기</h2><p>집게 중심을 정확히 · 참가비 20 G</p></button><button class="destination" data-arcade="timing" ${s.daily.timing ? "disabled" : ""}><span>⏱</span><h2>10초 맞추기</h2><p>무료 · 하루 1회 · ${s.daily.timing ? "오늘 도전 완료" : "다이아 0~10개 / 장난감 0~5개"}</p></button><button class="destination" data-arcade="hex"><span>⬡</span><h2>오락하기!</h2><p>고양이 HEX FINALE · 참가비 15 G</p></button></div></div>`,
     renderWalk,
   );
   bind("arcade", (id) => {
-    if (id === "rhythm") return;
-    const s = player(),
-      fee = id === "claw" ? 20 : 15;
+    if (id === "timing") {
+      renderTiming();
+      return;
+    }
+    if (!["claw", "hex"].includes(id)) return;
+    const fee = id === "claw" ? 20 : 15;
     if (!E.canAct(s) || !E.spend(s, fee)) {
-      notice(`${fee} G가 필요해. 춘배 건강 상태도 확인해 줘.`);
+      notice(`${fee} G와 건강한 춘배가 필요해.`);
       return;
     }
     s.arcadeSession = { type: id, token: crypto.randomUUID() };
     save();
-    ({ claw: renderClaw, rhythm: renderRhythm, hex: renderHex })[id]();
+    (id === "claw" ? renderClaw : renderHex)();
   });
 }
 function finishArcade(gold, diamonds, message, happy = true) {
@@ -272,148 +276,64 @@ function renderClaw() {
   });
   canvas.focus({ preventScroll: true });
 }
-function renderRhythm() {
-  const s = player(),
-    music = new Audio("assets/afterglow.mp3");
-  music.volume = 0.3;
-  let started = false,
-    elapsed = 0,
-    last = 0,
-    raf,
-    hits = 0,
-    combo = 0,
-    best = 0,
-    done = false,
-    paused = false,
-    judge = "준비되면 시작!",
-    flash = [0, 0, 0, 0];
-  const notes = Array.from({ length: 48 }, (_, i) => ({
-    at: 2 + i * 0.5,
-    lane: (i * 7 + Math.floor(i / 4)) % 4,
-    hit: false,
-    miss: false,
-  }));
+function renderTiming() {
+  const s = player();
+  let running = false,
+    token = null,
+    started = 0,
+    raf = 0,
+    settled = false;
   gameShell(
-    `<div class="neon-lobby">${title("FOUR PAWS RHYTHM", "냥냥 비트", "D F J K 또는 아래 패드를 누르자. 판정선 ±0.16초 안에 맞히기!")}<div class="rhythm-score" id="rhythmScore">0 / 48 · COMBO 0</div><canvas id="rhythmCanvas" width="480" height="390" class="mini-canvas"></canvas><p id="rhythmJudge">준비되면 시작!</p><button class="btn primary wide" id="rhythmStart">시작 / 계속하기</button><div class="rhythm-pads">${["D", "F", "J", "K"].map((k, i) => `<button class="btn" data-lane="${i}">${k}</button>`).join("")}</div></div>`,
-    () => {
-      cancelArcade();
-      renderArcade();
-    },
+    `${title("TEN SECOND CHALLENGE", "10초 맞추기", "시작을 누른 뒤 10초에 정확히 멈춰!")}<div class="timer-stage"><div class="timer-clock" id="timingClock">0.000</div><progress id="timingProgress" max="10.5" value="0"></progress><p>성공 범위 9.900~10.100초 · 10.5초를 넘으면 자동 실패</p><button class="btn primary wide" id="timingStart" ${s.daily.timing || !E.canAct(s) ? "disabled" : ""}>${s.daily.timing ? "오늘 도전 완료" : "시작! · 무료 · 하루 1회"}</button><button class="btn wide" id="timingStop" disabled>멈춰!</button><div id="timingResult" role="status"></div></div><p class="note">성공하면 다이아 0~10개와 장난감 0~5개를 무작위로 받아. 둘 다 0일 수도 있어.<br>시작하면 오늘 횟수가 소모돼. 중간에 나가거나 새로고침해도 다시 도전할 수 없어.</p>`,
+    renderArcade,
   );
-  activeActivity = true;
-  const ctx = document.querySelector("#rhythmCanvas").getContext("2d");
-  const onSound = () => (music.muted = !sound);
-  window.addEventListener("petopia-sound", onSound);
-  function hit(lane) {
-    if (!started || done || paused) return;
-    const note = notes
-      .filter((n) => n.lane === lane && !n.hit && !n.miss)
-      .sort((a, b) => Math.abs(a.at - elapsed) - Math.abs(b.at - elapsed))[0];
-    flash[lane] = 0.15;
-    if (note && Math.abs(note.at - elapsed) <= 0.16) {
-      note.hit = true;
-      hits++;
-      combo++;
-      best = Math.max(best, combo);
-      judge = Math.abs(note.at - elapsed) < 0.08 ? "PERFECT!" : "GOOD!";
-      clickSound();
-    } else {
-      combo = 0;
-      judge = "조금만 더 박자에 맞춰봐!";
-    }
-  }
   function finish() {
-    done = true;
-    music.pause();
-    const accuracy = hits / 48,
-      diamonds = accuracy >= 0.85 ? 3 : accuracy >= 0.5 ? 1 : 0;
-    finishArcade(
-      10 + Math.floor(hits / 3),
-      diamonds,
-      `리듬 완료! 정확도 ${Math.round(accuracy * 100)}%`,
-    );
-    document.querySelector("#rhythmJudge").textContent =
-      `완료! ${hits}/48 · 최대 콤보 ${best} · 다이아 +${diamonds}`;
-    document.querySelector("#rhythmStart").disabled = true;
+    if (!running || settled) return;
+    const elapsed = (performance.now() - started) / 1000;
+    settled = true;
+    running = false;
+    cancelAnimationFrame(raf);
+    const result = E.finishTiming(s, token, elapsed);
+    if (!result) return;
+    activeActivity = false;
+    save();
+    completeOuting();
+    document.querySelector("#timingClock").textContent = elapsed.toFixed(3);
+    document.querySelector("#timingStop").disabled = true;
+    document.querySelector("#timingResult").innerHTML =
+      `<h2>${result.success ? "PERFECT!" : "아깝다…"}</h2><p>${elapsed.toFixed(3)}초 · ${result.success ? `다이아 +${result.diamonds}개 / 장난감 ${result.toys.length}개` : "경품은 없지만 다음 날 다시 도전해 봐!"}</p>${result.toys.map((i) => `<span class="timer-prize">${E.toys[i].name}</span>`).join("")}`;
+    playEffect(result.success ? "victory" : "sad");
+    notice(`10초 맞추기 ${result.success ? "성공!" : "실패…"}`);
   }
-  function frame(now) {
-    const dt = Math.min(0.04, (now - last) / 1000 || 0);
-    last = now;
-    if (started && !paused && !done) {
-      elapsed = music.currentTime;
-      for (const n of notes)
-        if (!n.hit && !n.miss && elapsed > n.at + 0.16) {
-          n.miss = true;
-          combo = 0;
-          judge = "MISS";
-        }
-      if (elapsed > 26.5) finish();
+  function frame() {
+    if (!running) return;
+    const elapsed = (performance.now() - started) / 1000;
+    document.querySelector("#timingClock").textContent = elapsed.toFixed(3);
+    document.querySelector("#timingProgress").value = elapsed;
+    if (elapsed >= 10.5) {
+      finish();
+      return;
     }
-    ctx.fillStyle = "#131d35";
-    ctx.fillRect(0, 0, 480, 390);
-    for (let i = 0; i < 4; i++) {
-      flash[i] = Math.max(0, flash[i] - dt);
-      ctx.fillStyle = flash[i] ? "#644d7e" : "#1c2c46";
-      ctx.fillRect(i * 120 + 4, 0, 112, 390);
-      ctx.fillStyle = ["#75e5e5", "#f19fce", "#ecc880", "#9dacf3"][i];
-      ctx.fillRect(i * 120 + 8, 323, 104, 4);
-    }
-    for (const n of notes) {
-      if (n.hit || n.miss) continue;
-      const y = 325 - (n.at - elapsed) * 180;
-      if (y < 0 || y > 360) continue;
-      ctx.fillStyle = ["#75e5e5", "#f19fce", "#ecc880", "#9dacf3"][n.lane];
-      ctx.fillRect(n.lane * 120 + 15, y - 8, 90, 16);
-    }
-    document.querySelector("#rhythmScore").textContent =
-      `${hits} / 48 · COMBO ${combo}`;
-    if (!done)
-      document.querySelector("#rhythmJudge").textContent = paused
-        ? "일시정지. 계속하기를 눌러 줘."
-        : judge;
     raf = requestAnimationFrame(frame);
   }
-  const keys = ["KeyD", "KeyF", "KeyJ", "KeyK"],
-    keydown = (e) => {
-      if (keys.includes(e.code)) {
-        e.preventDefault();
-        if (!e.repeat) hit(keys.indexOf(e.code));
-      }
-    },
-    blur = () => {
-      if (started && !done) {
-        paused = true;
-        music.pause();
-      }
-    };
-  window.addEventListener("keydown", keydown);
-  window.addEventListener("blur", blur);
-  const visibility = () => {
-    if (document.hidden) blur();
+  document.querySelector("#timingStart").onclick = () => {
+    token = crypto.randomUUID();
+    if (!E.startTiming(s, token)) return;
+    running = true;
+    activeActivity = true;
+    started = performance.now();
+    save();
+    document.querySelector("#timingStart").disabled = true;
+    document.querySelector("#timingStop").disabled = false;
+    raf = requestAnimationFrame(frame);
   };
-  document.addEventListener("visibilitychange", visibility);
-  document.querySelector("#rhythmStart").onclick = () => {
-    music.muted = !sound;
-    music
-      .play()
-      .then(() => {
-        started = true;
-        paused = false;
-        judge = "비트를 따라가자!";
-      })
-      .catch(() => notice("음악 재생을 허용하고 다시 눌러줘."));
-  };
-  bind("lane", (i) => hit(Number(i)));
-  raf = requestAnimationFrame(frame);
+  document.querySelector("#timingStop").onclick = finish;
   setCleanup(() => {
-    window.removeEventListener("petopia-sound", onSound);
-    music.pause();
-    music.src = "";
     cancelAnimationFrame(raf);
-    window.removeEventListener("keydown", keydown);
-    window.removeEventListener("blur", blur);
-    document.removeEventListener("visibilitychange", visibility);
-    cancelArcade();
+    if (s.arcadeSession?.token === token) {
+      s.arcadeSession = null;
+      save();
+    }
   });
 }
 function renderHex() {
@@ -483,7 +403,7 @@ function renderCasino() {
   const s = player();
   gameShell(
     `<div class="casino-lobby">${title("JOKER’S CAT CASINO", "춘배 카지노", "조커의남자는 졌지만 영업은 계속됩니다.")}<div class="neon-sign">LUCKY PAWS CLUB ♠</div><div class="destination-grid"><button class="destination" data-casino="slot"><span>🎰</span><h2>냥슬롯</h2><p>그림 3개 · 배당 최대 10배</p></button><button class="destination" data-casino="roulette"><span>◉</span><h2>냥룰렛</h2><p>빨강·검정 2배 / 초록 30배</p></button></div><p class="note">금화 전용 · 최소 10 / 최대 500 G · 배당은 건 금액 포함 총액.<br>카지노는 다이아를 지급하지 않아. 날짜·자산 수입과 별개의 금화 게임이야.</p></div>`,
-    renderWalk,
+    renderGambling,
   );
   bind("casino", (id) => (id === "slot" ? renderSlot() : renderRoulette()));
 }

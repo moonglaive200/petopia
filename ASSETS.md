@@ -45,3 +45,11 @@ All game assets are served locally; normal play does not request third-party CDN
 - Camera shutter, impact, defeat and victory sounds are synthesized locally with Web Audio; the original licensed meow and supplied arcade music are retained.
 
 - v0.4의 증강 SVG 아이콘, Canvas 아이템·무기 이펙트, 골목 배경 및 비 효과는 이 저장소의 코드로 직접 그립니다. 추가 외부 이미지·음원은 사용하지 않습니다.
+
+## v0.5 movement and audio
+
+- `assets/chunbae-walk.png`: generated specifically for this game using the already approved Chunbae character as reference. A transparent 4×4 sheet: down/left/right/up rows with four walk frames each. Original generated output retained outside the repository.
+- `assets/shutter.mp3`: user-provided `998DE13C5FCA000E04.mp3`, copied unchanged (0.366 seconds); used for Petstar posting. This is a user-supplied asset, not claimed to be MIT.
+- Four cat-voice renderings: happy/surprised/complaining use playback-rate and timing variations of the existing MIT cat clip; purring is synthesized. These are not four additional field recordings. No new external cat audio was added.
+- Weapon, footstep, pickup, dodge, warning and ambient battle sounds are synthesized locally through one reusable Web Audio context. Muting stops the shutter, cat voices and context together; rate limiting prevents repeated hit/voice spam.
+- Petstar celebrity names are fictional offline like events; they do not represent real interactions or endorsements.

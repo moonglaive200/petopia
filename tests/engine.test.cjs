@@ -10,7 +10,7 @@ const test = (name, fn) => {
 };
 const advance = (s) => {
   s.energy = Math.min(s.energy, 25);
-  return E.nextDay(s);
+  return E.nextDay(s,()=>.99);
 };
 const fresh = (o = {}) =>
   E.normalize({
@@ -299,7 +299,7 @@ test("loan maturity allows negative balances; treatment never restores owner ene
 test("park removed the 20% guaranteed romance and keeps exact daily cost", () => {
   const s = fresh();
   const text = E.park(s, 0.6);
-  assert.ok(text.includes("평범한"));
+  assert.ok(text.includes("공원산책"));
   assert.equal(s.diamonds, 1);
   assert.equal(s.daily.walk, 1);
   assert.equal(s.energy, 75);
@@ -492,9 +492,10 @@ test("job gates, staff cap, price changes, drive gate and equipment ten levels",
   s.romance = { kind: 0, stage: 0, affection: 0 };
   assert.ok(E.drive(s));
   assert.equal(s.romance.affection, 0.1);
-  s.weaponUp = 9;
+  s.weapon=1;
+  s.weaponUp = 19;
   assert.ok(E.upgradeCost(s, "weapon") > 0);
-  s.weaponUp = 10;
+  s.weaponUp = 20;
   assert.equal(E.upgradeCost(s, "weapon"), 0);
 });
 test("average cost, realized loss and automatic liquidation", () => {
@@ -676,7 +677,7 @@ test("nine buildings yield two percent, companies one percent, and sleep enforce
   assert.equal(s.day, 1);
   assert.equal(s.energy, 26);
   s.energy = 25;
-  assert.ok(E.nextDay(s));
+  assert.ok(E.nextDay(s,()=>.99));
   assert.equal(s.day, 2);
   assert.equal(s.energy, 100);
   assert.equal(E.nextDay(s), null);

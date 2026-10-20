@@ -55,6 +55,11 @@ class CatSurvival {
       dashCD: 0,
       dx: 1,
       dy: 0,
+      walking: false,
+      walkDistance: 0,
+      facing: 0,
+      attackAnim: 0,
+      hitRecoil: 0,
     };
     this.enemies = [];
     this.shots = [];
@@ -96,6 +101,8 @@ class CatSurvival {
     this.moveDistance = 0;
     this.collectables = 0;
     this.id = null;
+    this.soundEvents = [];
+    this.stepMeter = 0;
   }
   needed() {
     return 7 + this.level * 3;
@@ -206,6 +213,7 @@ class CatSurvival {
       color: "#ffd76b",
     });
     this.shake = 12;
+    this.soundEvents.push("bomb");
     this.numbers.push({
       x,
       y: y - 70,
@@ -222,6 +230,8 @@ class CatSurvival {
     p.hp = Math.max(0, p.hp - damage);
     p.inv = 0.75;
     this.shake = 8;
+    p.hitRecoil = 0.22;
+    this.soundEvents.push("hurt");
     this.numbers.push({
       x: p.x,
       y: p.y - 32,
@@ -245,6 +255,7 @@ class CatSurvival {
     if (this.paused || this.choice || p.dashCD > 0 || this.lost || this.won)
       return;
     p.dash = 0.18;
+    this.soundEvents.push("dodge");
     p.inv = 0.32;
     p.dashCD = 2.5;
   }
@@ -258,7 +269,12 @@ class CatSurvival {
           this.random() * Math.min(12, 4 + this.time / 18 + this.map * 2),
         ),
       );
-    const bossId = (this.day - 1 + this.map * 3 + (final ? 5 : 0)) % 10,
+    const bossId =
+        this.map === 0
+          ? final
+            ? 0
+            : 1
+          : (this.day - 1 + this.map * 3 + (final ? 5 : 0)) % 10,
       b = PetopiaEngine.bosses[bossId];
     const hp = boss
       ? b.hp * (final ? 1.1 : 0.65) * (1 + this.map * 0.25)
@@ -338,6 +354,7 @@ class CatSurvival {
     while (this.xp >= this.needed()) {
       this.xp -= this.needed();
       this.level++;
+      this.soundEvents.push("level");
       this.pendingLevels++;
     }
     if (this.pendingLevels && !this.choice) this.choice = this.options();
@@ -358,6 +375,23 @@ class CatSurvival {
         null,
       );
     if (!nearest) return;
+    p.attackAnim = 0.18;
+    this.effects.push({
+      kind: "cast",
+      weapon: i,
+      evolved: this.evolved(i),
+      x: p.x,
+      y: p.y,
+      r: 35 + this.weapons[i] * 4,
+      life: 0.38,
+      max: 0.38,
+      color: ["#ffe7a1", "#88edff", "#bfa5ff", "#ffafe2", "#ff8be3", "#ffc783"][
+        i
+      ],
+    });
+    this.soundEvents.push(
+      ["claw", "fish", "bell", "yarn", "laser", "puddle"][i],
+    );
     const angle = Math.atan2(nearest.y - p.y, nearest.x - p.x),
       evolved = this.evolved(i);
     if (i === 0 || i === 2) {
@@ -507,24 +541,44 @@ class CatSurvival {
     if (this.time >= 60 && !this.midSpawned) {
       this.midSpawned = true;
       this.spawn(true, false);
+      this.soundEvents.push("boss");
       this.event = "01:00 중간 보스 등장!";
+      this.numbers.push({
+        x: this.player.x,
+        y: this.player.y - 110,
+        text: "중간 보스 등장!",
+        life: 1.5,
+        boss: true,
+      });
     }
     if (this.time >= 180 && !this.finalSpawned) {
       this.finalSpawned = true;
       this.spawn(true, true);
+      this.soundEvents.push("boss");
       this.event = "03:00 최종 보스 등장!";
+      this.numbers.push({
+        x: this.player.x,
+        y: this.player.y - 110,
+        text: "최종 보스 등장!",
+        life: 1.8,
+        boss: true,
+      });
     }
     if (this.hitStop > 0) {
       this.hitStop -= dt;
       return;
     }
     const p = this.player;
-    for (const k of ["inv", "dash", "dashCD"]) p[k] = Math.max(0, p[k] - dt);
+    for (const k of ["inv", "dash", "dashCD", "attackAnim", "hitRecoil"])
+      p[k] = Math.max(0, p[k] - dt);
     this.shake = Math.max(0, this.shake - dt * 28);
     let dx = (input.right ? 1 : 0) - (input.left ? 1 : 0),
       dy = (input.down ? 1 : 0) - (input.up ? 1 : 0),
       len = Math.hypot(dx, dy);
+    p.walking = !!len;
     if (len) {
+      p.facing =
+        Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 1 : 2) : dy < 0 ? 3 : 0;
       dx /= len;
       dy /= len;
       p.dx = dx;
@@ -541,6 +595,22 @@ class CatSurvival {
       p.x = Math.max(24, Math.min(2376, p.x + dx * speed * dt));
       p.y = Math.max(24, Math.min(1776, p.y + dy * speed * dt));
       this.moveDistance += speed * dt;
+      p.walkDistance += speed * dt;
+      this.stepMeter += speed * dt;
+      if (this.stepMeter >= 30) {
+        this.stepMeter = 0;
+        this.soundEvents.push("step");
+        if (this.effects.length < 120)
+          this.effects.push({
+            kind: "dust",
+            x: p.x,
+            y: p.y + 24,
+            r: 14,
+            life: 0.3,
+            max: 0.3,
+            color: "#e8d3a7",
+          });
+      }
     }
     this.spawnClock -= dt;
     if (this.spawnClock <= 0 && this.enemies.length < 100) {
@@ -693,6 +763,7 @@ class CatSurvival {
       if (d < 24) {
         this.gainXP(g.value);
         g.collected = true;
+        this.soundEvents.push("pickup");
       }
     }
     this.gems = this.gems.filter((g) => !g.collected);
@@ -700,6 +771,7 @@ class CatSurvival {
     for (const item of this.loot)
       if (Math.hypot(item.x - p.x, item.y - p.y) < 32) {
         item.collected = true;
+        this.soundEvents.push(item.kind === "bomb" ? "bomb" : "chest");
         this.collectables++;
         if (item.kind === "magnet")
           for (const g of this.gems) {
@@ -745,6 +817,7 @@ function startSurvival(map = 0) {
   const s = player();
   if (!E.consume(s, "dungeon", 1, 50)) return;
   const arena = new CatSurvival(E.stats(s), map, s.day);
+  lastAmbientBeat = -1;
   arena.id = crypto.randomUUID();
   s.expedition = arena.snapshot();
   save();
@@ -1011,13 +1084,23 @@ function startSurvival(map = 0) {
     ctx.save();
     ctx.globalAlpha =
       p.inv > 0 && Math.floor(arena.time * 15) % 2 === 0 ? 0.45 : 1;
-    drawPortrait(
-      ctx,
-      px,
-      py + (motion ? Math.sin(arena.time * 9) * 1.3 : 0),
-      86,
-      emotion,
-    );
+    if (p.dash > 0 && motion) {
+      for (let i = 3; i > 0; i--) {
+        ctx.save();
+        ctx.globalAlpha = 0.12 * (4 - i);
+        ctx.filter = "brightness(1.6) saturate(.6)";
+        drawWalkingCat(
+          ctx,
+          px - p.dx * i * 19,
+          py - p.dy * i * 19,
+          80,
+          p,
+          arena.time,
+        );
+        ctx.restore();
+      }
+    }
+    drawWalkingCat(ctx, px, py, 80, p, arena.time);
     ctx.restore();
     if (arena.weapons[3]) {
       const n = 2 + Math.floor(arena.weapons[3] / 2);
@@ -1069,6 +1152,7 @@ function startSurvival(map = 0) {
       }
       ctx.restore();
     }
+    // Floating motes, additive trails and secondary waves make each weapon distinct.
     for (const e of arena.effects) {
       ctx.save();
       ctx.globalAlpha = Math.max(0, e.life / e.max);
@@ -1078,8 +1162,40 @@ function startSurvival(map = 0) {
       ctx.fillStyle = e.color;
       ctx.lineWidth = e.kind === "slash" ? 7 : 3;
       ctx.shadowColor = e.color;
-      ctx.shadowBlur = 18;
-      if (e.kind === "explosion") {
+      ctx.shadowBlur = motion ? 25 : 12;
+      if (e.kind === "cast") {
+        const q = 1 - e.life / e.max;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineWidth = e.evolved ? 4 : 2;
+        ctx.beginPath();
+        ctx.ellipse(
+          x,
+          y + 22,
+          e.r * (0.5 + q),
+          e.r * 0.3 * (0.5 + q),
+          0,
+          0,
+          Math.PI * 2,
+        );
+        ctx.stroke();
+        const count = e.evolved ? 16 : 8;
+        for (let i = 0; i < count; i++) {
+          const a = (i * Math.PI * 2) / count + e.weapon * 0.7,
+            d = e.r * (0.4 + q * 1.7);
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(a) * d * 0.75, y + Math.sin(a) * d * 0.75);
+          ctx.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (e.kind === "dust") {
+        for (let i = 0; i < 4; i++) {
+          const a = i * 1.7,
+            d = (1 - e.life / e.max) * e.r;
+          ctx.fillRect(x + Math.cos(a) * d, y + Math.sin(a) * d, 3, 3);
+        }
+      } else if (e.kind === "explosion") {
         const q = 1 - e.life / e.max;
         ctx.fillStyle = "#ffab3033";
         ctx.beginPath();
@@ -1132,6 +1248,7 @@ function startSurvival(map = 0) {
         ctx.lineTo(x + Math.cos(e.angle) * e.r, y + Math.sin(e.angle) * e.r);
         ctx.lineWidth = 18;
         ctx.stroke();
+        ctx.shadowBlur = 30;
         ctx.strokeStyle = "#fff6fd";
         ctx.lineWidth = 5;
         ctx.stroke();
@@ -1177,13 +1294,15 @@ function startSurvival(map = 0) {
       ctx.font = n.cheese
         ? "bold 25px Neo,monospace"
         : "bold 16px Neo,monospace";
-      ctx.fillStyle = n.cheese
-        ? "#ffe063"
-        : n.hurt
-          ? "#ffc7bb"
-          : n.crit
-            ? "#ffe18e"
-            : "#fff6d5";
+      ctx.fillStyle = n.boss
+        ? "#ff4a40"
+        : n.cheese
+          ? "#ffe063"
+          : n.hurt
+            ? "#ffc7bb"
+            : n.crit
+              ? "#ffe18e"
+              : "#fff6d5";
       ctx.strokeStyle = "#594137";
       ctx.lineWidth = 3;
       ctx.strokeText(n.text, n.x - camX, n.y - camY);
@@ -1315,6 +1434,13 @@ function startSurvival(map = 0) {
     });
     draw();
     renderOverlay();
+    if (!arena.paused && !arena.choice && !settled)
+      playCombatAmbience(arena.time);
+    for (const event of [...new Set(arena.soundEvents.splice(0))]) {
+      playEffect(event);
+      if (event === "hurt") catVoice("complain");
+      else if (event === "boss") catVoice("surprise");
+    }
     if (arena.hitSound && t - lastSound > 110) {
       arena.hitSound = false;
       lastSound = t;

@@ -263,6 +263,9 @@
     gift: 0,
     talk: 0,
     date: 0,
+    nap: 0,
+    timing: 0,
+    casino: 0,
   });
   function stockFor(day, seed = 0) {
     return [0, 1, 2].map(
@@ -273,6 +276,8 @@
   function normalize(s) {
     const prev = s.version || 1;
     const d = {
+      gearVersion: 0,
+      gearUp: { weapon: {}, armor: {} },
       introSeen: true,
       outingPending: false,
       version: 3,
@@ -365,6 +370,15 @@
           s.costBasis[type][i] = price(s, type, +i) * q;
     }
     syncMarketListings(s);
+    if (!s.gearVersion) {
+      for (const type of ["weapon", "armor"]) {
+        s.gearUp[type] ??= {};
+        s.gearUp[type][s[type]] = Math.min(20, s[type + "Up"] || 0);
+      }
+      s.gearVersion = 1;
+    }
+    for (const type of ["weapon", "armor"])
+      s[type + "Up"] = s.gearUp[type][s[type]] || 0;
     if (!s.dayStart) s.dayStart = daySnapshot(s);
     if (s.eventDay !== s.day) rollDay(s);
     s.energy = Math.max(0, Math.min(100, s.energy));
@@ -398,18 +412,19 @@
   function stats(s) {
     const b = relationshipBonus(s);
     return {
-      hp: 80 + (s.level - 1) * 8 + armors[s.armor].hp,
+      hp:
+        80 +
+        (s.level - 1) * 8 +
+        Math.round(armors[s.armor].hp * gearMultiplier(s.armorUp)),
       attack:
         8 +
         (s.level - 1) * 2 +
-        weapons[s.weapon].attack +
-        s.weaponUp * 2 +
+        Math.round(weapons[s.weapon].attack * gearMultiplier(s.weaponUp)) +
         b.attack,
       defense:
         1 +
         Math.floor((s.level - 1) / 3) +
-        armors[s.armor].defense +
-        s.armorUp +
+        Math.round(armors[s.armor].defense * gearMultiplier(s.armorUp)) +
         b.defense,
     };
   }
@@ -476,17 +491,37 @@
     "고양이 축제",
     "정체불명의 고지서",
     "골목 깡패 등장",
+    "손톱깎이",
+    "털깎이",
+    "춘배가 아프다 ㅠㅠ",
+    "냄새가 너무 나! 냥빨을 해야겠어!",
   ];
+  const eventChances = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 1, 2];
   function rollDay(s, random = Math.random) {
     s.weather = random() < 0.1 ? "rain" : "sun";
     s.eventDay = s.day;
-    s.event =
-      random() < 0.4
-        ? { id: Math.floor(random() * events.length), resolved: false }
-        : null;
+    const r = random() * 100;
+    let sum = 0;
+    s.event = null;
+    for (let id = 0; id < events.length; id++) {
+      sum += eventChances[id];
+      if (r < sum) {
+        s.event = { id, chance: eventChances[id], resolved: false };
+        break;
+      }
+    }
+    if (s.event?.id === 10) {
+      const loss = Math.floor(Math.max(0, s.gold) * 0.1);
+      s.gold -= loss;
+      s.energy = Math.max(0, s.energy - 75);
+      happy(s, -75);
+      s.event.resolved = true;
+      s.event.effect = `골드 −${loss} G · 기력 −75 · 행복도 −75`;
+      log(s, s.event.effect);
+    }
     log(
       s,
-      `${s.weather === "rain" ? "비 오는 날 ☂" : "맑은 날 ☀"} · ${s.event ? events[s.event.id] : "평온한 하루"}`,
+      `${s.weather === "rain" ? "비 오는 날 ☂ (10%)" : "맑은 날 ☀ (90%)"} · ${s.event ? events[s.event.id] + " (" + s.event.chance + "%)" : "평온한 하루 (47%)"}`,
     );
   }
   function eventIs(s, id) {
@@ -506,6 +541,11 @@
       else if (!spend(s, fee)) return false;
     } else if (id === 0) {
       if (Math.random() < 0.75) s.treats[0]++;
+    } else if ([8, 9, 11].includes(id)) {
+      const cost = id === 11 ? 50 : 25;
+      if (!canAct(s) || s.energy < cost) return false;
+      s.energy -= cost;
+      happy(s, id === 11 ? -10 : 10);
     } else return false;
     s.event.resolved = true;
     log(s, events[id] + " 해결 완료");
@@ -567,7 +607,7 @@
     s.energy -= energy;
     log(
       s,
-      `${{ walk: "유흥", dungeon: "냥서바이벌", work: "근무" }[key] || key} 시작 · 주인 기력 −${energy}`,
+      `${{ walk: "힐링하기", dungeon: "냥서바이벌", work: "근무" }[key] || key} 시작 · 주인 기력 −${energy}`,
     );
     return true;
   }
@@ -589,8 +629,60 @@
     else s.liveDay = s.day;
     return true;
   }
-  function upgradeCost(s, t) {
-    return s[t + "Up"] >= 10 ? 0 : Math.round(60 * Math.pow(1.65, s[t + "Up"]));
+  function gearMultiplier(level) {
+    return level <= 10
+      ? 1 + level * 0.1
+      : 2 + 3 * Math.pow((level - 10) / 10, 1.4);
+  }
+  function upgradeInfo(s, type) {
+    if (!["weapon", "armor"].includes(type) || s[type] === 0) return null;
+    const item = (type === "weapon" ? weapons : armors)[s[type]],
+      level = s[type + "Up"] || 0,
+      target = level + 1;
+    if (target > 20) return null;
+    const band = target <= 5 ? 0 : target <= 10 ? 1 : 2;
+    return {
+      level,
+      target,
+      cost: Math.max(1, Math.ceil(item.cost * [0.1, 0.2, 0.3][band])),
+      success: [0.9, 0.7, 0.5][band],
+      hold: [0.08, 0.2, 0.35][band],
+      destroy: [0.02, 0.1, 0.15][band],
+      multiplier: gearMultiplier(target),
+    };
+  }
+  function upgradeCost(s, type) {
+    return upgradeInfo(s, type)?.cost || 0;
+  }
+  function enhance(s, type, r = Math.random()) {
+    const info = upgradeInfo(s, type);
+    if (!info || !canAct(s) || r < 0 || r >= 1 || !spend(s, info.cost))
+      return null;
+    const id = s[type],
+      item = (type === "weapon" ? weapons : armors)[id];
+    const outcome =
+      r < info.success
+        ? "success"
+        : r < info.success + info.hold
+          ? "hold"
+          : "destroy";
+    if (outcome === "success") {
+      s[type + "Up"] = info.target;
+      s.gearUp[type][id] = info.target;
+    }
+    if (outcome === "destroy") {
+      s[type === "weapon" ? "weapons" : "armors"] = s[
+        type === "weapon" ? "weapons" : "armors"
+      ].filter((i) => i !== id);
+      delete s.gearUp[type][id];
+      s[type] = 0;
+      s[type + "Up"] = 0;
+    }
+    log(
+      s,
+      `${item.name} +${info.target} 강화 ${outcome === "success" ? "성공" : outcome === "hold" ? "유지" : "파괴"} · −${info.cost} G`,
+    );
+    return { outcome, ...info, name: item.name };
   }
   function purchase(s, kind, i) {
     const map = {
@@ -609,7 +701,10 @@
     if (!item) return false;
     const repeat = ["treat", "toy"].includes(kind);
     if (!repeat && s[key].includes(i)) {
-      if (["weapon", "armor", "house"].includes(kind)) s[kind] = i;
+      if (["weapon", "armor", "house"].includes(kind)) {
+        s[kind] = i;
+        if (kind !== "house") s[kind + "Up"] = s.gearUp[kind][i] || 0;
+      }
       return true;
     }
     if (kind === "treat" && s.treatStock[i] <= 0) return false;
@@ -630,7 +725,10 @@
       s.toyBag[i] = (s.toyBag[i] || 0) + 1;
       if (!s.toys.includes(i)) s.toys.push(i);
     } else s[key].push(i);
-    if (["weapon", "armor", "house"].includes(kind)) s[kind] = i;
+    if (["weapon", "armor", "house"].includes(kind)) {
+      s[kind] = i;
+      if (kind !== "house") s[kind + "Up"] = s.gearUp[kind][i] || 0;
+    }
     return true;
   }
   function vehicleBonus(s) {
@@ -716,9 +814,10 @@
       !treats[i] ||
       s.treats[i] <= 0 ||
       s.daily[gift ? "gift" : "feed"] >= 1 ||
-      (gift && !s.romance)
+      (gift && (!s.romance || s.energy < 25))
     )
       return false;
+    if (gift) s.energy -= 25;
     s.treats[i]--;
     s.daily[gift ? "gift" : "feed"]++;
     if (gift)
@@ -727,8 +826,15 @@
     return true;
   }
   function giftToy(s, i) {
-    if (!canAct(s) || !s.romance || !s.toyBag[i] || s.daily.gift >= 1)
+    if (
+      !canAct(s) ||
+      s.energy < 25 ||
+      !s.romance ||
+      !s.toyBag[i] ||
+      s.daily.gift >= 1
+    )
       return false;
+    s.energy -= 25;
     s.toyBag[i]--;
     if (!s.toyBag[i]) s.toys = s.toys.filter((n) => n !== i);
     s.daily.gift++;
@@ -736,7 +842,8 @@
     return true;
   }
   function talk(s) {
-    if (!canAct(s) || !s.romance || s.daily.talk) return false;
+    if (!canAct(s) || s.energy < 25 || !s.romance || s.daily.talk) return false;
+    s.energy -= 25;
     s.daily.talk = 1;
     affection(s, 0.15 * (eventIs(s, 4) ? 1.3 : 1));
     return true;
@@ -752,9 +859,11 @@
       !s.romance ||
       s.daily.date ||
       !dates[i] ||
+      s.energy < 25 ||
       !spend(s, dates[i].cost)
     )
       return false;
+    s.energy -= 25;
     s.daily.date = 1;
     affection(s, dates[i].gain * (eventIs(s, 4) ? 1.3 : 1));
     return true;
@@ -764,24 +873,35 @@
     if (
       !canAct(s) ||
       !p ||
+      s.energy < 25 ||
       p.stage !== (proposal ? 1 : 0) ||
       p.affection < (proposal ? 6 : 3) ||
       s.diamonds < (proposal ? 5 : 1)
     )
       return null;
+    s.energy -= 25;
     s.diamonds -= proposal ? 5 : 1;
     const success = r < 0.5;
     if (success) p.stage = proposal ? 2 : 1;
     return success;
   }
   function switchPartner(s) {
-    if (s.candidate === null || s.romance?.stage === 3) return false;
+    if (
+      !canAct(s) ||
+      s.energy < 25 ||
+      s.candidate === null ||
+      s.romance?.stage === 3
+    )
+      return false;
+    s.energy -= 25;
     s.romance = { kind: s.candidate, affection: 0, stage: 0, since: s.day };
     s.candidate = null;
     return true;
   }
   function breakUp(s) {
-    if (!s.romance || s.romance.stage === 3) return false;
+    if (!canAct(s) || s.energy < 25 || !s.romance || s.romance.stage === 3)
+      return false;
+    s.energy -= 25;
     s.romance = null;
     s.candidate = null;
     return true;
@@ -789,7 +909,7 @@
   function canSleep(s) {
     return s.energy <= 25 && !s.expedition && !s.arcadeSession;
   }
-  function nextDay(s) {
+  function nextDay(s, dayRandom = Math.random) {
     if (!canSleep(s)) return null;
     const dayOpening = s.dayStart || daySnapshot(s);
     syncMarketListings(s);
@@ -871,7 +991,7 @@
     if (s.gold < 0) report.push("잔액이 마이너스여도 계속 활동할 수 있어.");
     const closing = daySnapshot(s);
     s.dayStart = closing;
-    rollDay(s);
+    rollDay(s, dayRandom);
     report.push(
       `${dateLabel(s.day)} · ${s.weather === "rain" ? "비" : "맑음"} · ${s.event ? events[s.event.id] : "평온한 하루"}`,
     );
@@ -891,15 +1011,15 @@
     return report;
   }
   function park(s, r = Math.random()) {
-    if (!consume(s, "walk", 1, 25)) return null;
+    if (s.weather === "rain" || !consume(s, "walk", 1, 25)) return null;
+    happy(s, eventIs(s, 5) ? 39 : 30);
     s.walks++;
     let text;
     if (r < 0.8) {
-      happy(s, 10);
       const diamonds = 1 + (eventIs(s, 5) && Math.random() < 0.3 ? 1 : 0);
       s.diamonds += diamonds;
       s.earned.diamonds += diamonds;
-      text = `평범한 산책 · 행복도 +10 · 다이아 +${diamonds}`;
+      text = `공원산책 · 행복도 +30 · 다이아 +${diamonds}`;
     } else if (r < 0.85) {
       const i = s.walks % toys.length;
       s.toyBag[i] = (s.toyBag[i] || 0) + 1;
@@ -924,14 +1044,7 @@
       s.liveFollowers += b;
       text = `쓰다듬 받기 · 펫스타 +${a} / Live +${b}명`;
     }
-    if (s.weather === "rain") {
-      happy(s, -12);
-      text += " · 비 오는 공원! 물웅덩이 폴짝 · 행복도 −12";
-    }
-    if (eventIs(s, 5)) {
-      happy(s, 3);
-      text += " · 고양이 축제 행복도 보너스 +3";
-    }
+    text += " · 행복도 +" + (eventIs(s, 5) ? 39 : 30);
     const event = meet(s, "walk");
     return text + (event ? " · " + event : "");
   }
@@ -949,12 +1062,65 @@
     s.diamonds += 1 + (luxury ? 1 : 0) + (plane ? 5 : 0);
     s.earned.diamonds += 1 + (luxury ? 1 : 0) + (plane ? 5 : 0);
     affection(s, 0.1);
-    happy(s, luxury ? 25 : 20);
+    happy(s, 30);
     const event = meet(s, "walk");
     return (
-      `드라이브! +${g} G · 다이아 +${1 + (luxury ? 1 : 0) + (plane ? 5 : 0)} · 호감도 +0.1` +
+      `드라이브! 행복도 +30 · +${g} G · 다이아 +${1 + (luxury ? 1 : 0) + (plane ? 5 : 0)} · 호감도 +0.1` +
       (event ? " · " + event : "")
     );
+  }
+  function weekend(s) {
+    return ["일", "토"].includes(calendar(s.day).weekday);
+  }
+  function nap(s) {
+    if (!canAct(s) || !weekend(s) || s.daily.nap) return false;
+    s.daily.nap = 1;
+    happy(s, 30);
+    log(s, "집사랑 낮잠자기 · 행복도 +30 · 기력 소모 없음");
+    return true;
+  }
+  function enterArcade(s) {
+    if (!consume(s, "walk", 1, 25)) return false;
+    happy(s, 5);
+    s.outingPending = true;
+    return true;
+  }
+  function enterCasino(s) {
+    return s.bossCleared && consume(s, "casino", 1, 25);
+  }
+  function startTiming(s, token) {
+    if (!canAct(s) || s.daily.timing) return false;
+    s.daily.timing = 1;
+    s.arcadeSession = { type: "timing", token, day: s.day };
+    return true;
+  }
+  function finishTiming(s, token, elapsed, random = Math.random) {
+    if (
+      s.arcadeSession?.type !== "timing" ||
+      s.arcadeSession.token !== token ||
+      s.arcadeSession.day !== s.day ||
+      !Number.isFinite(elapsed) ||
+      elapsed < 0
+    )
+      return null;
+    const success = Math.abs(elapsed - 10) <= 0.10000001;
+    const diamonds = success ? Math.floor(random() * 11) : 0,
+      count = success ? Math.floor(random() * 6) : 0,
+      won = [];
+    s.diamonds += diamonds;
+    s.earned.diamonds += diamonds;
+    for (let j = 0; j < count; j++) {
+      const i = Math.min(toys.length - 1, Math.floor(random() * toys.length));
+      s.toyBag[i] = (s.toyBag[i] || 0) + 1;
+      if (!s.toys.includes(i)) s.toys.push(i);
+      won.push(i);
+    }
+    s.arcadeSession = null;
+    log(
+      s,
+      `10초 맞추기 ${elapsed.toFixed(3)}초 · ${success ? "성공" : "실패"} · 다이아 +${diamonds} · 장난감 ${count}개`,
+    );
+    return { success, elapsed, diamonds, toys: won };
   }
   function addFollowers(s, type, n) {
     n = Math.round(n * (eventIs(s, 1) ? 1.3 : 1));
@@ -1188,7 +1354,18 @@
     consume,
     influenceCost,
     useInfluence,
+    rollDay,
     upgradeCost,
+    upgradeInfo,
+    enhance,
+    gearMultiplier,
+    eventChances,
+    weekend,
+    nap,
+    enterArcade,
+    enterCasino,
+    startTiming,
+    finishTiming,
     purchase,
     vehicleBonus,
     jobPay,
