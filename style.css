@@ -5036,3 +5036,10 @@ dialog {
     font-size: 11px;
   }
 }
+/* Keep the boxed back button on its own row during new-game setup. */
+.panel > .back {
+  display: block;
+  width: fit-content;
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
