@@ -25,6 +25,38 @@ function leaveGame() {
 function setCleanup(fn) {
   viewCleanup = fn;
 }
+const GUIDE_TIPS = [
+  "주인 기력은 하루 최대 100! 당일에는 회복되지 않고 잠자면 다시 채워져.",
+  "냥서바이벌은 하루 1번, 주인 기력 50과 행복도 20 이상이 필요해.",
+  "냥서바이벌은 자동 공격! WASD로 이동하고 Space로 회피할 수 있어.",
+  "던전에서는 1분에 중간 보스, 3분에 최종 보스가 등장해.",
+  "던전에서 쓰러져도 생존 시간과 처치 수에 따른 보상은 받을 수 있어.",
+  "무기 5단계와 짝인 능력 3단계를 모으면 무기가 진화해. 던전의 진화 조합을 확인해 봐!",
+  "흡혈 송곳니는 실제 준 피해의 10%씩 체력을 회복해. 3단계면 30%!",
+  "유흥은 하루 1번, 기력 25야. 방앗간 안에서는 추가 기력 없이 여러 판 즐길 수 있어.",
+  "공원산책에서 썸냥이를 만날 확률은 3%! 고양이 축제 날에는 3.9%야.",
+  "드라이브는 자동차와 썸냥이가 모두 있어야 해금돼. 함께 달리면 호감도도 조금 올라!",
+  "직접 일하기는 기력 50을 쓰고 다음 날 일당과 근무 경력을 받아. 다른 활동도 가능해.",
+  "공사장 주인 10단계면 회사, 회사 주인 10단계면 연구소가 열려.",
+  "직원 교육은 같은 직장의 주인 단계까지만 가능해. 먼저 집사부터 승진하자!",
+  "펫스타는 매일 1번, 펫 Live는 3일에 1번! 그날 첫 인플루언서 활동만 기력 25를 써.",
+  "펫스타와 Live에서 얻은 팬의 20%는 다른 채널에도 유입돼.",
+  "행복도 70~99는 수입 +20%, 행복도 100은 +50%! 춘배 기분도 챙겨 줘.",
+  "유명세·행복도·연애·집의 수입 보너스는 서로 곱해져. 주인 일당에는 탈것도 추가 적용!",
+  "츄르 먹이기와 썸냥이 선물은 각각 하루 1개야. 둘 다 같은 날 할 수 있어.",
+  "츄르는 종류마다 매일 0~2개 입고돼. 원하는 맛이 있다면 재고부터 확인해 봐.",
+  "호감도 3에서는 고백, 6에서는 프로포즈! 성공 전에는 해당 호감도를 넘을 수 없어.",
+  "대화·선물·데이트는 각각 별도 제한이야. 하루에 세 가지를 모두 할 수 있어.",
+  "잠자기 전 집 효과를 확인해 봐. 노숙은 기상 행복도 −10, 좋은 집은 행복도를 올려줘.",
+  "주식은 하루 ±30%, 코인은 −99%~+200%! 평균 매입가 대비 −99%면 보유분이 전부 사라져.",
+  "병원 치료는 행복도를 30으로 회복해. 돈이 부족하면 긴급 대출이 가능하지만 기력은 안 차!",
+  "한 계절은 28일, 1일은 일요일이야. 달력에 표시된 겨울 27일은 춘배 생일!",
+];
+let guideIndex = -1;
+function guidePanel() {
+  guideIndex = (guideIndex + 1) % GUIDE_TIPS.length;
+  return `<div class="game-notice guide-panel"><p id="guideText" aria-live="polite">가이드: ${GUIDE_TIPS[guideIndex]}</p><button class="text-button" id="nextGuide" aria-label="다음 가이드 보기">다음 팁 <span id="guideCount">${guideIndex + 1}/${GUIDE_TIPS.length}</span> →</button></div>`;
+}
 function statusText(s) {
   return s.hospital
     ? "춘배가 쉬고 싶대. 펫병원에서 치료해 줘."
@@ -38,7 +70,7 @@ function gameShell(content, back = renderHome) {
   cleanupView();
   const s = player();
   document.body.dataset.screen = "game";
-  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${content}<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="mart">▤ 펫마트</button><button data-utility="bank">♜ 펫은행</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton">☾ 잠자기</button><button data-utility="settings">⚙ 설정</button></nav></section>`;
+  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${back === showSlots ? dailyEventPanel(s) : ""}${content}<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="mart">▤ 펫마트</button><button data-utility="bank">♜ 펫은행</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton">☾ 잠자기</button><button data-utility="settings">⚙ 설정</button></nav></section>`;
   document.querySelector(".save-label").textContent =
     `SLOT ${selectedSlot + 1}${s.ownerName ? " · " + s.ownerName + " 집사" : ""}`;
   document.querySelector("#gameBack").onclick = () => {
@@ -119,7 +151,7 @@ function renderHome() {
       )
       .join(
         "",
-      )}</nav>${dailyEventPanel(s)}<div class="daily-log">${s.logs.map((l) => `<p>[${E.dateLabel(l.day)}] ${escapeLog(l.text)}</p>`).join("")}</div><p class="game-notice">${statusText(s)}</p>`,
+      )}</nav><div class="daily-log">${s.logs.map((l) => `<p>[${E.dateLabel(l.day)}] ${escapeLog(l.text)}</p>`).join("")}</div>${guidePanel()}`,
     showSlots,
   );
   const actions = {
@@ -137,6 +169,13 @@ function renderHome() {
       renderHome();
     } else notice("금화 또는 주인 기력이 부족해.");
   });
+  document.querySelector("#nextGuide").onclick = () => {
+    guideIndex = (guideIndex + 1) % GUIDE_TIPS.length;
+    document.querySelector("#guideText").textContent =
+      "가이드: " + GUIDE_TIPS[guideIndex];
+    document.querySelector("#guideCount").textContent =
+      `${guideIndex + 1}/${GUIDE_TIPS.length}`;
+  };
   const log = document.querySelector(".daily-log");
   log.scrollTop = log.scrollHeight;
 }

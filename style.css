@@ -3973,3 +3973,36 @@ dialog {
 .calendar-weekdays .saturday {
   color: #3268a4;
 }
+
+.guide-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: space-between;
+}
+.guide-panel p {
+  margin: 0;
+  line-height: 1.7;
+}
+.guide-panel .text-button {
+  flex-shrink: 0;
+  color: #634325;
+  font-weight: bold;
+}
+.game-top + .event-banner {
+  margin-top: 0;
+  text-align: center;
+}
+.game-top + .event-banner .choice-row {
+  justify-content: center;
+}
+@media (max-width: 650px) {
+  .guide-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .guide-panel .text-button {
+    align-self: flex-end;
+  }
+}
