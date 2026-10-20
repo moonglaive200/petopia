@@ -10,6 +10,27 @@
     { name: "택배 상자 갑옷", defense: 3, hp: 16, cost: 150 },
     { name: "방탄 앞치마", defense: 7, hp: 36, cost: 550 },
   ];
+  // Preserve the original indices; later equipment tiers extend existing saves.
+  [
+    ["참치캔 너클", 24, 1800],
+    ["냥냥 펀치 글러브", 36, 4200],
+    ["은빛 송곳니", 48, 9000],
+    ["달빛 갈퀴", 65, 18000],
+    ["츄르 광선검", 85, 36000],
+    ["집사 수호냥권", 110, 72000],
+    ["춘배의 천공발톱", 145, 140000],
+  ].forEach(([name, attack, cost]) => weapons.push({ name, attack, cost }));
+  [
+    ["골판지 기사 갑옷", 11, 60, 1600],
+    ["냥집사 방호복", 16, 90, 3800],
+    ["참치 비늘 갑옷", 22, 130, 8200],
+    ["달빛 망토", 29, 180, 17000],
+    ["우주 탐사냥 슈트", 37, 240, 34000],
+    ["집사 수호 성갑", 46, 310, 68000],
+    ["춘배의 불멸 털갑옷", 58, 400, 135000],
+  ].forEach(([name, defense, hp, cost]) =>
+    armors.push({ name, defense, hp, cost }),
+  );
   const treats = [
     { name: "참치 츄르", cost: 18, diamond: 0, happy: 15 },
     { name: "연어 츄르", cost: 45, diamond: 0, happy: 35 },
@@ -137,7 +158,7 @@
   // v3 catalogs and rules. Existing item indices remain stable for old saves.
   treats.forEach((t, i) =>
     Object.assign(t, {
-      cost: [100, 500, 1500][i],
+      cost: [400, 1100, 2200][i],
       diamond: i === 2 ? 1 : 0,
       affection: [0.15, 0.35, 0.7][i],
     }),
@@ -158,16 +179,19 @@
       "츄르 왕관",
     ].map((name, i) => ({
       name,
-      cost: ([90, 180, 350][i] || 400 + (i - 3) * 180) * 3,
-      diamond: i === 2 ? 4 : i > 6 ? i - 6 : 0,
+      cost: Math.round((0.2 + i * 0.08) * 3000),
+      diamond: 0,
       affection: 0.2 + i * 0.08,
     })),
   );
   vehicles.forEach((v, i) => {
-    v.cost *= 10;
+    v.cost *= i === 2 ? 50 : 10;
     v.work = [0.1, 0.15, 0.25][i];
     v.text += ` · 주인 일당 +${v.work * 100}% (최고 효과만 적용)`;
   });
+  vehicles[0].text = "자동차+썸냥이로 드라이브 해금 · 주인 일당 ×1.10";
+  vehicles[1].text = "드라이브 다이아 +1 · 주인 일당 ×1.15";
+  vehicles[2].text = "드라이브 다이아 +5 · 주인 일당 ×1.25";
   houses.forEach((h, i) => {
     h.cost *= 10;
     h.wake = [-10, -5, 0, 3, 6, 9, 12][i];
@@ -180,6 +204,13 @@
   });
   buildings.forEach((b) => (b.cost *= 10));
   companies.forEach((c) => (c.cost *= 10));
+  companies.forEach((c, i) => {
+    c.stock = [1800, 750, 950, 2200, 1600, 2100, 650, 1200, 180, 350][i];
+    c.cost = [
+      900000, 480000, 560000, 1200000, 1000000, 1300000, 450000, 850000, 110000,
+      220000,
+    ][i];
+  });
   const partners = [
     { name: "치즈냥이", row: 0, likes: 0 },
     { name: "턱시도냥이", row: 1, likes: 1 },
@@ -277,6 +308,15 @@
       survivalRecords: [],
       discovered: [],
       completionSerial: 0,
+      earned: { gold: 0, diamonds: 0 },
+      logs: [],
+      event: null,
+      weather: "sun",
+      eventDay: 0,
+      costBasis: { stock: {}, coin: {} },
+      realized: { stock: 0, coin: 0 },
+      dayStart: null,
+      previousMarket: null,
     };
     for (const [k, v] of Object.entries(d))
       if (s[k] === undefined) s[k] = structuredClone(v);
@@ -298,6 +338,14 @@
       stock: companies.map((c) => c.stock),
       coin: coins.map((c) => c.base),
     };
+    for (const type of ["stock", "coin"]) {
+      const book = type === "stock" ? s.stocks : s.coinHoldings;
+      for (const [i, q] of Object.entries(book))
+        if (q && s.costBasis[type][i] === undefined)
+          s.costBasis[type][i] = price(s, type, +i) * q;
+    }
+    if (!s.dayStart) s.dayStart = daySnapshot(s);
+    if (s.eventDay !== s.day) rollDay(s);
     s.energy = Math.max(0, Math.min(100, s.energy));
     s.version = 3;
     return s;
@@ -344,16 +392,110 @@
         b.defense,
     };
   }
-  function bonus(s) {
+  function fameBonus(s) {
     const n = s.followers + s.liveFollowers;
+    return n >= 1000000
+      ? 1
+      : n >= 100000
+        ? 0.5
+        : n >= 50000
+          ? 0.3
+          : n >= 30000
+            ? 0.25
+            : n >= 10000
+              ? 0.2
+              : n >= 5000
+                ? 0.15
+                : n >= 1000
+                  ? 0.1
+                  : n >= 100
+                    ? 0.05
+                    : 0;
+  }
+  function bonus(s) {
     return (
-      (n >= 10000 ? 0.15 : n >= 1000 ? 0.1 : n >= 100 ? 0.05 : 0) +
-      relationshipBonus(s).gold
+      (1 + fameBonus(s)) *
+        (1 + relationshipBonus(s).gold) *
+        (s.happiness === 100 ? 1.5 : s.happiness >= 70 ? 1.2 : 1) *
+        (1 + houses[s.house].work) -
+      1
     );
+  }
+  function calendar(day) {
+    const n = day - 1;
+    return {
+      year: Math.floor(n / 112) + 1,
+      season: ["SPRING", "SUMMER", "FALL", "WINTER"][Math.floor(n / 28) % 4],
+      date: (n % 28) + 1,
+    };
+  }
+  function dateLabel(day) {
+    const c = calendar(day);
+    return `${c.year}년 ${c.season} ${c.date}일`;
+  }
+  function log(s, text) {
+    s.logs.push({ day: s.day, text: String(text) });
+    s.logs = s.logs.slice(-100);
+  }
+  function daySnapshot(s) {
+    return {
+      gold: s.gold,
+      diamonds: s.diamonds,
+      fans: s.followers + s.liveFollowers,
+      affection: s.romance?.affection || 0,
+    };
+  }
+  const events = [
+    "택배 도착",
+    "알고리즘의 선택",
+    "집사야 야근해",
+    "펫마트 세일",
+    "오늘따라 귀여워",
+    "고양이 축제",
+    "정체불명의 고지서",
+    "골목 깡패 등장",
+  ];
+  function rollDay(s, random = Math.random) {
+    s.weather = random() < 0.1 ? "rain" : "sun";
+    s.eventDay = s.day;
+    s.event =
+      random() < 0.4
+        ? { id: Math.floor(random() * events.length), resolved: false }
+        : null;
+    log(
+      s,
+      `${s.weather === "rain" ? "비 오는 날 ☂" : "맑은 날 ☀"} · ${s.event ? events[s.event.id] : "평온한 하루"}`,
+    );
+  }
+  function eventIs(s, id) {
+    return s.event?.id === id;
+  }
+  function resolveEvent(s, choice) {
+    if (!s.event || s.event.resolved) return false;
+    const id = s.event.id,
+      fee = (id === 7 ? 80 : 30) + s.level * (id === 7 ? 35 : 12);
+    if (id === 7) {
+      if (choice === "fight") {
+        if (s.energy < 50) return false;
+        s.energy -= 50;
+      } else if (!spend(s, fee)) return false;
+    } else if (id === 6) {
+      if (choice === "ad") addFollowers(s, "star", 2);
+      else if (!spend(s, fee)) return false;
+    } else if (id === 0) {
+      if (Math.random() < 0.75) s.treats[0]++;
+    } else return false;
+    s.event.resolved = true;
+    log(s, events[id] + " 해결 완료");
+    return true;
+  }
+  function shopPrice(s, item) {
+    return Math.round(item.cost * (eventIs(s, 3) ? 0.7 : 1));
   }
   function reward(s, n) {
     const g = Math.floor(n * (1 + bonus(s)) + 1e-8);
     s.gold += g;
+    s.earned.gold += g;
     return g;
   }
   function happy(s, n) {
@@ -395,6 +537,10 @@
     if (!canAct(s) || s.daily[key] >= limit || s.energy < energy) return false;
     s.daily[key]++;
     s.energy -= energy;
+    log(
+      s,
+      `${{ walk: "유흥", dungeon: "냥서바이벌", work: "근무" }[key] || key} 시작 · 주인 기력 −${energy}`,
+    );
     return true;
   }
   function influenceCost(s) {
@@ -416,7 +562,7 @@
     return true;
   }
   function upgradeCost(s, t) {
-    return [60, 120, 220][s[t + "Up"]] || 0;
+    return s[t + "Up"] >= 10 ? 0 : Math.round(60 * Math.pow(1.65, s[t + "Up"]));
   }
   function purchase(s, kind, i) {
     const map = {
@@ -439,7 +585,16 @@
       return true;
     }
     if (kind === "treat" && s.treatStock[i] <= 0) return false;
-    if (!spend(s, item.cost, item.diamond || 0)) return false;
+    if (
+      !spend(
+        s,
+        ["weapon", "armor", "treat", "toy", "vehicle"].includes(kind)
+          ? shopPrice(s, item)
+          : item.cost,
+        item.diamond || 0,
+      )
+    )
+      return false;
     if (kind === "treat") {
       s.treats[i]++;
       s.treatStock[i]--;
@@ -453,15 +608,18 @@
   function vehicleBonus(s) {
     return Math.max(0, ...s.vehicles.map((i) => vehicles[i].work));
   }
+  function jobUnlocked(s, i) {
+    return i === 0 || s.workLevels[i - 1] >= 10;
+  }
   function jobPay(s, i, staff = false) {
-    const level = (staff ? s.staffLevels : s.workLevels)[i],
-      h = houses[s.house],
-      base = jobs[i].pay * (1 + (level - 1) * (staff ? 0.3 : 0.5));
+    const level = (staff ? s.staffLevels : s.workLevels)[i];
     return Math.floor(
-      base *
-        (1 +
-          (staff ? h.staff : h.work + vehicleBonus(s)) +
-          relationshipBonus(s).gold),
+      jobs[i].pay *
+        (staff ? 5 : 2) *
+        (1 + (level - 1) * (staff ? 0.3 : 0.5)) *
+        (1 + bonus(s)) *
+        (staff ? 1 + houses[s.house].staff : 1 + vehicleBonus(s)) *
+        (!staff && eventIs(s, 2) ? 1.3 : 1),
     );
   }
   function promotion(s, i, staff = false) {
@@ -469,7 +627,7 @@
       lv = levels[i];
     if (lv >= 10) return null;
     return {
-      cost: Math.round((staff ? jobs[i].hire * 0.4 : 100 + i * 60) * lv * lv),
+      cost: Math.round((staff ? jobs[i].hire * 0.4 : 1000 + i * 600) * lv * lv),
       days: staff ? 0 : lv * 2,
     };
   }
@@ -477,6 +635,8 @@
     const p = promotion(s, i, staff);
     if (
       !p ||
+      !jobUnlocked(s, i) ||
+      (staff && s.staffLevels[i] >= s.workLevels[i]) ||
       (staff && !s.employees.includes(i)) ||
       (!staff && s.workDays[i] < p.days) ||
       !spend(s, p.cost)
@@ -486,19 +646,22 @@
     return true;
   }
   function startJob(s, i) {
-    if (!jobs[i] || !consume(s, "work", 1, 50)) return false;
+    if (!jobs[i] || !jobUnlocked(s, i) || !consume(s, "work", 1, 50))
+      return false;
     s.working = i;
+    log(s, `${jobs[i].name} 근무 예약 완료!`);
     return true;
   }
   function hire(s, i) {
     const cost = Math.floor(jobs[i].hire * (1 - houses[s.house].discount));
-    if (s.employees.includes(i) || !spend(s, cost)) return false;
+    if (!jobUnlocked(s, i) || s.employees.includes(i) || !spend(s, cost))
+      return false;
     s.employees.push(i);
     return true;
   }
   function meet(s, source, r = Math.random(), typeRoll = Math.random()) {
     s.completionSerial++;
-    const chance = source === "walk" ? 0.03 : 0.01;
+    const chance = source === "walk" ? 0.03 * (eventIs(s, 5) ? 1.3 : 1) : 0.01;
     if (s.romance?.stage === 3 || r >= chance) return null;
     const choices = [0, 1, 2].filter((i) => i !== s.romance?.kind);
     const kind =
@@ -547,13 +710,13 @@
   function talk(s) {
     if (!canAct(s) || !s.romance || s.daily.talk) return false;
     s.daily.talk = 1;
-    affection(s, 0.15);
+    affection(s, 0.15 * (eventIs(s, 4) ? 1.3 : 1));
     return true;
   }
   const dates = [
-    { name: "편의점 앞 벤치", cost: 150, gain: 0.2 },
-    { name: "츄르 맛집", cost: 650, gain: 0.5 },
-    { name: "별빛 루프탑", cost: 1800, gain: 1 },
+    { name: "편의점 앞 벤치", cost: 450, gain: 0.2 },
+    { name: "츄르 맛집", cost: 1950, gain: 0.5 },
+    { name: "별빛 루프탑", cost: 5400, gain: 1 },
   ];
   function date(s, i) {
     if (
@@ -565,7 +728,7 @@
     )
       return false;
     s.daily.date = 1;
-    affection(s, dates[i].gain);
+    affection(s, dates[i].gain * (eventIs(s, 4) ? 1.3 : 1));
     return true;
   }
   function confess(s, proposal = false, r = Math.random()) {
@@ -597,6 +760,7 @@
   }
   function nextDay(s) {
     if (s.expedition || s.arcadeSession) return null;
+    const dayOpening = s.dayStart || daySnapshot(s);
     const before = {
       gold: s.gold,
       diamonds: s.diamonds,
@@ -608,6 +772,7 @@
       const i = s.working,
         n = jobPay(s, i);
       s.gold += n;
+      s.earned.gold += n;
       s.workDays[i]++;
       report.push(`${jobs[i].name} 일당 +${n} G · 근무 ${s.workDays[i]}일`);
       const event = meet(s, "work");
@@ -620,15 +785,18 @@
     for (const i of s.companies) {
       income += companies[i].income;
       s.stocks[i] = (s.stocks[i] || 0) + 1;
+      s.costBasis.stock[i] = (s.costBasis.stock[i] || 0) + price(s, "stock", i);
       report.push(`${companies[i].name} 주식 +1주`);
     }
     if (income) {
       s.gold += income;
+      s.earned.gold += income;
       report.push(`직원·자산 수입 +${income} G`);
     }
     const b = relationshipBonus(s);
     if (b.gift) {
       s.gold += b.gift;
+      s.earned.gold += b.gift;
       report.push(`동반자 생활 선물 +${b.gift} G`);
     }
     if (s.romance?.stage === 3) {
@@ -636,23 +804,23 @@
       report.push("평생의 냥 선물: 참치 츄르 +1");
     }
     s.day++;
+    s.previousMarket = structuredClone(s.market);
     for (const type of ["stock", "coin"])
       s.market[type] = s.market[type].map((old, i) => {
-        const r =
-          (Math.sin(s.day * 73 + i * 39 + (type === "coin" ? 91 : 0)) *
-            43758.5453) %
-          1;
-        const u = r - Math.floor(r),
-          change = type === "stock" ? u * 0.6 - 0.3 : u * 2.4 - 0.9;
-        return Math.max(
-          Math.max(1, Math.ceil(old * (type === "stock" ? 0.7 : 0.1))),
-          Math.min(
-            Math.floor(old * (type === "stock" ? 1.3 : 2.5)),
-            1e9,
-            Math.round(old * (1 + change)),
-          ),
-        );
+        const u = Math.random(),
+          change = type === "stock" ? u * 0.6 - 0.3 : u * 2.99 - 0.99;
+        return old <= 0
+          ? 0
+          : Math.max(
+              Math.ceil(old * (type === "stock" ? 0.7 : 0.01)),
+              Math.min(
+                1e9,
+                Math.floor(old * (type === "stock" ? 1.3 : 3)),
+                Math.round(old * (1 + change)),
+              ),
+            );
       });
+    liquidate(s, report);
     for (const l of s.loans.filter((l) => l.due <= s.day)) {
       const paid = Math.ceil(l.amount * 1.1 - 1e-8);
       s.gold -= paid;
@@ -669,47 +837,75 @@
       `주인 기력 100 · 집 효과 행복도 ${houses[s.house].wake >= 0 ? "+" : ""}${houses[s.house].wake} · 츄르 새 입고`,
     );
     if (s.gold < 0) report.push("잔액이 마이너스여도 계속 활동할 수 있어.");
+    const closing = daySnapshot(s);
+    s.dayStart = closing;
+    rollDay(s);
+    report.push(
+      `${dateLabel(s.day)} · ${s.weather === "rain" ? "비" : "맑음"} · ${s.event ? events[s.event.id] : "평온한 하루"}`,
+    );
     s.dayReport = report;
     s.lastDayDelta = {
       day: s.day,
-      gold: s.gold - before.gold,
-      diamonds: s.diamonds - before.diamonds,
+      gold: s.earned.gold,
+      netGold: closing.gold - dayOpening.gold,
+      fans: closing.fans - dayOpening.fans,
+      affection:
+        Math.round((closing.affection - dayOpening.affection) * 100) / 100,
+      diamonds: s.earned.diamonds,
       energy: s.energy - before.energy,
       happiness: s.happiness - before.happiness,
     };
+    s.earned = { gold: 0, diamonds: 0 };
     return report;
   }
   function park(s, r = Math.random()) {
     if (!consume(s, "walk", 1, 25)) return null;
     s.walks++;
     let text;
-    if (r < 0.7) {
+    if (r < 0.8) {
       happy(s, 10);
-      s.diamonds++;
-      text = "평범한 산책 · 행복도 +10 · 다이아 +1";
-    } else if (r < 0.8) {
-      happy(s, -12);
-      text = "비가 왔어! 행복도 −12";
+      const diamonds = 1 + (eventIs(s, 5) && Math.random() < 0.3 ? 1 : 0);
+      s.diamonds += diamonds;
+      s.earned.diamonds += diamonds;
+      text = `평범한 산책 · 행복도 +10 · 다이아 +${diamonds}`;
     } else if (r < 0.85) {
       const i = s.walks % toys.length;
       s.toyBag[i] = (s.toyBag[i] || 0) + 1;
       if (!s.toys.includes(i)) s.toys.push(i);
-      text = `${toys[i].name} 발견!`;
+      const extra = eventIs(s, 5) && Math.random() < 0.3 ? 1 : 0;
+      if (extra) s.toyBag[i]++;
+      text = `${toys[i].name} ${1 + extra}개 발견!`;
     } else if (r < 0.9) {
-      s.treats[0]++;
-      text = "참치 츄르 1개 발견!";
+      const count = 1 + (eventIs(s, 5) && Math.random() < 0.3 ? 1 : 0);
+      s.treats[0] += count;
+      text = `참치 츄르 ${count}개 발견!`;
     } else {
-      const a = Math.max(1, Math.ceil(s.followers * 0.1)),
-        b = Math.max(1, Math.ceil(s.liveFollowers * 0.1));
+      const a = Math.max(
+          1,
+          Math.ceil(s.followers * 0.1 * (eventIs(s, 5) ? 1.3 : 1)),
+        ),
+        b = Math.max(
+          1,
+          Math.ceil(s.liveFollowers * 0.1 * (eventIs(s, 5) ? 1.3 : 1)),
+        );
       s.followers += a;
       s.liveFollowers += b;
       text = `쓰다듬 받기 · 펫스타 +${a} / Live +${b}명`;
+    }
+    if (s.weather === "rain") {
+      happy(s, -12);
+      text += " · 비 오는 공원! 물웅덩이 폴짝 · 행복도 −12";
+    }
+    if (eventIs(s, 5)) {
+      happy(s, 3);
+      text += " · 고양이 축제 행복도 보너스 +3";
     }
     const event = meet(s, "walk");
     return text + (event ? " · " + event : "");
   }
   function drive(s) {
     if (
+      !s.romance ||
       !s.vehicles.some((i) => vehicles[i].type === "car") ||
       !consume(s, "walk", 1, 25)
     )
@@ -717,16 +913,19 @@
     s.walks++;
     const luxury = s.vehicles.includes(1),
       plane = s.vehicles.includes(2),
-      g = reward(s, 25 + (luxury ? 30 : 0));
-    s.diamonds += 1 + (plane ? 1 : 0);
+      g = reward(s, 25);
+    s.diamonds += 1 + (luxury ? 1 : 0) + (plane ? 5 : 0);
+    s.earned.diamonds += 1 + (luxury ? 1 : 0) + (plane ? 5 : 0);
+    affection(s, 0.1);
     happy(s, luxury ? 25 : 20);
     const event = meet(s, "walk");
     return (
-      `드라이브! +${g} G · 다이아 +${plane ? 2 : 1}` +
+      `드라이브! +${g} G · 다이아 +${1 + (luxury ? 1 : 0) + (plane ? 5 : 0)} · 호감도 +0.1` +
       (event ? " · " + event : "")
     );
   }
   function addFollowers(s, type, n) {
+    n = Math.round(n * (eventIs(s, 1) ? 1.3 : 1));
     const other = type === "star" ? "liveFollowers" : "followers",
       key = type === "star" ? "followers" : "liveFollowers",
       cross = Math.floor(n * 0.2);
@@ -744,7 +943,7 @@
     if (borrow) takeLoan(s, borrow, true);
     s.gold -= cost;
     s.hospital = false;
-    s.happiness = Math.max(55, s.happiness);
+    s.happiness = 30;
     s.expedition = null;
     return { cost, borrow };
   }
@@ -769,14 +968,37 @@
       p = price(s, type, i),
       held = book[i] || 0;
     if (side === "buy") {
+      if (p <= 0) return false;
       if (!spend(s, p * qty)) return false;
       book[i] = held + qty;
+      s.costBasis[type][i] = (s.costBasis[type][i] || 0) + p * qty;
     } else {
       if (held < qty) return false;
+      const cost = ((s.costBasis[type][i] || 0) * qty) / held;
+      s.costBasis[type][i] = Math.max(0, (s.costBasis[type][i] || 0) - cost);
+      s.realized[type] += Math.floor(p * qty * 0.96) - cost;
       book[i] = held - qty;
       s.gold += Math.floor(p * qty * 0.96);
     }
     return true;
+  }
+  function liquidate(s, report = []) {
+    for (const type of ["stock", "coin"]) {
+      const book = type === "stock" ? s.stocks : s.coinHoldings;
+      for (const [i, q] of Object.entries(book))
+        if (q > 0) {
+          const value = price(s, type, +i) * q,
+            cost = s.costBasis[type][i] || 0;
+          if (value === 0 || (cost > 0 && value <= cost * 0.01)) {
+            s.realized[type] -= cost;
+            book[i] = 0;
+            s.costBasis[type][i] = 0;
+            report.push(
+              `${(type === "stock" ? companies : coins)[i].name} −99%/0G 자동청산 · 전량 소멸`,
+            );
+          }
+        }
+    }
   }
   function settleSurvival(s, run) {
     if (!s.expedition || s.expedition.id !== run.id) return null;
@@ -834,6 +1056,7 @@
       won = color === result,
       payout = won ? bet * (color === "green" ? 30 : 2) : 0;
     s.gold += payout;
+    s.earned.gold += payout;
     return { slot, color: result, won, payout, bet };
   }
   function slot(s, bet, rolls = [Math.random(), Math.random(), Math.random()]) {
@@ -851,9 +1074,20 @@
       multiplier = unique === 1 ? 10 : unique === 2 ? 1 : 0,
       payout = bet * multiplier;
     s.gold += payout;
+    s.earned.gold += payout;
     return { symbols, multiplier, payout };
   }
   root.PetopiaEngine = {
+    calendar,
+    dateLabel,
+    log,
+    events,
+    eventIs,
+    resolveEvent,
+    shopPrice,
+    jobUnlocked,
+    fameBonus,
+    liquidate,
     weapons,
     armors,
     treats,

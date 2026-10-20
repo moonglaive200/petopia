@@ -7,7 +7,7 @@ const SURVIVAL_WEAPONS = [
     pair: "speed",
   },
   { name: "방울 충격파", desc: "넓게 퍼지는 원형 충격파", pair: "range" },
-  { name: "공전 털실공", desc: "몸 주위를 도는 털실공", pair: "armor" },
+  { name: "공전 털실공", desc: "몸 주위를 도는 털실공", pair: "vamp" },
   { name: "레이저 눈빛", desc: "긴 직선으로 꿰뚫는 눈빛", pair: "magnet" },
   { name: "츄르 웅덩이", desc: "적 발밑에 남는 지속 피해", pair: "luck" },
 ];
@@ -15,7 +15,11 @@ const SURVIVAL_PASSIVES = [
   { id: "power", name: "맹수의 발톱", desc: "공격력 +20%" },
   { id: "range", name: "길어진 수염", desc: "공격 범위 +15%" },
   { id: "speed", name: "냥발 스텝", desc: "이동·공격 속도 +10%" },
-  { id: "armor", name: "폭신한 목털", desc: "방어 +2" },
+  {
+    id: "vamp",
+    name: "흡혈 송곳니",
+    desc: "준 피해의 10% 체력 흡수 · 최대 30%",
+  },
   { id: "magnet", name: "집사의 부름", desc: "경험치 회수 범위 +40" },
   { id: "luck", name: "행운의 꼬리", desc: "치명타·필드 보상 확률 증가" },
 ];
@@ -65,7 +69,7 @@ class CatSurvival {
       power: 0,
       range: 0,
       speed: 0,
-      armor: 0,
+      vamp: 0,
       magnet: 0,
       luck: 0,
     };
@@ -111,7 +115,23 @@ class CatSurvival {
     if (enemy.hp <= 0) return;
     const crit = this.random() < 0.05 + this.passives.luck * 0.06,
       damage = Math.max(1, Math.round(amount * (crit ? 1.7 : 1)));
+    const actual = Math.min(enemy.hp, damage);
     enemy.hp = Math.max(0, enemy.hp - damage);
+    if (this.passives.vamp)
+      this.player.hp = Math.min(
+        this.player.maxHP,
+        this.player.hp + actual * this.passives.vamp * 0.1,
+      );
+    this.effects.push({
+      kind: "spark",
+      x: enemy.x,
+      y: enemy.y,
+      r: crit ? 28 : 18,
+      angle: Math.atan2(ky, kx),
+      life: 0.18,
+      max: 0.18,
+      color: crit ? "#ffe97b" : "#fff2ce",
+    });
     enemy.flash = 0.12;
     const len = Math.hypot(kx, ky) || 1;
     enemy.x += (kx / len) * (enemy.boss ? 3 : 12);
@@ -145,6 +165,7 @@ class CatSurvival {
     this.gems.push({
       x: e.x,
       y: e.y,
+      icon: Math.floor(this.random() * 6),
       value: e.boss ? 18 : 1 + (e.type % 3 === 0 ? 1 : 0),
     });
     if (e.boss) {
@@ -167,10 +188,7 @@ class CatSurvival {
   hit(amount) {
     const p = this.player;
     if (p.inv > 0 || this.won || this.lost) return;
-    const damage = Math.max(
-      1,
-      Math.round(amount - this.stats.defense - this.passives.armor * 2),
-    );
+    const damage = Math.max(1, Math.round(amount - this.stats.defense));
     p.hp = Math.max(0, p.hp - damage);
     p.inv = 0.75;
     this.shake = 8;
@@ -503,7 +521,7 @@ class CatSurvival {
       this.lastEvent = this.time;
       this.event = [
         "박쥐 러시!",
-        "경험치 보석을 모아 성장하자!",
+        "바닥의 아이템 경험치를 모아 성장하자!",
         "장판을 피해 돌아가자!",
       ][Math.floor(this.time / 40) % 3];
       if (Math.floor(this.time / 40) % 2 === 1)
@@ -691,6 +709,7 @@ class CatSurvival {
 }
 globalThis.CatSurvival = CatSurvival;
 function startSurvival(map = 0) {
+  if (!Number.isInteger(map) || map < 0 || map > 2) return;
   const s = player();
   if (!E.consume(s, "dungeon", 1, 50)) return;
   const arena = new CatSurvival(E.stats(s), map, s.day);
@@ -698,7 +717,7 @@ function startSurvival(map = 0) {
   s.expedition = arena.snapshot();
   save();
   gameShell(
-    `${title("CAT SURVIVAL", ["햇살 공원", "버려진 펫마트", "네온 뒷골목"][map])}<div class="survival-hud"><strong id="runTime">00:00</strong><span id="runHP"></span><span id="runKills"></span><button class="text-button" id="pauseSurvival">일시정지 P</button></div><progress id="runXP" value="0" max="10" aria-label="판 안의 경험치"></progress><div class="action-wrap"><canvas id="survivalCanvas" width="860" height="500" tabindex="0" aria-label="WASD로 움직이는 냥서바이벌"></canvas><div id="survivalOverlay" hidden></div></div><div class="boss-run-bars" id="bossBars"></div><div class="run-build" id="runBuild"></div><div class="action-controls"><div class="dpad"><button data-move="up">↑</button><button data-move="left">←</button><button data-move="down">↓</button><button data-move="right">→</button></div><span>자동 공격 · WASD 이동</span><button class="btn" id="survivalDodge">회피 · Space</button></div><p class="game-notice" id="runEvent">01:00 중간 보스 · 03:00 최종 보스 · 최종 보스 처치 시 클리어</p><details><summary>진화 조합 보기</summary><p>무기 5단계 + 연결된 보조 능력 3단계</p>${SURVIVAL_WEAPONS.map((w) => `<p>${w.name} + ${SURVIVAL_PASSIVES.find((p) => p.id === w.pair).name}</p>`).join("")}</details>`,
+    `${title("CAT SURVIVAL", ["햇살 공원", "버려진 펫마트", "네온 뒷골목"][map])}<div class="survival-hud"><strong id="runTime">00:00</strong><div class="hero-health"><span id="runHP"></span><progress id="heroHP" max="100" value="100"></progress></div><span id="runKills"></span><button class="text-button" id="pauseSurvival">일시정지 P</button></div><progress id="runXP" value="0" max="10" aria-label="판 안의 경험치"></progress><div class="action-wrap"><canvas id="survivalCanvas" width="860" height="500" tabindex="0" aria-label="WASD로 움직이는 냥서바이벌"></canvas><div id="survivalOverlay" hidden></div></div><div class="boss-run-bars" id="bossBars"></div><div class="run-build" id="runBuild"></div><div class="action-controls"><div class="dpad"><button data-move="up">↑</button><button data-move="left">←</button><button data-move="down">↓</button><button data-move="right">→</button></div><span>자동 공격 · WASD 이동</span><button class="btn" id="survivalDodge">회피 · Space</button></div><p class="game-notice" id="runEvent">01:00 중간 보스 · 03:00 최종 보스 · 최종 보스 처치 시 클리어</p><details><summary>진화 조합 보기</summary><p>무기 5단계 + 연결된 보조 능력 3단계</p>${SURVIVAL_WEAPONS.map((w) => `<p>${w.name} + ${SURVIVAL_PASSIVES.find((p) => p.id === w.pair).name}</p>`).join("")}</details>`,
     renderDungeons,
   );
   activeActivity = true;
@@ -741,7 +760,7 @@ function startSurvival(map = 0) {
       if (overlayState === key) return;
       overlayState = key;
       overlay.hidden = false;
-      overlay.innerHTML = `<h2>LEVEL ${arena.level}!</h2><p>능력 하나를 골라 줘. 선택 중에는 시간이 멈춰.</p><div class="upgrade-choices">${arena.choice.map((c, i) => `<button class="btn" data-run-upgrade="${i}"><strong>${i + 1}. ${c.name} LV.${c.level}</strong><small>${c.desc}</small></button>`).join("")}</div>`;
+      overlay.innerHTML = `<h2>LEVEL ${arena.level}!</h2><p>능력 하나를 골라 줘. 선택 중에는 시간이 멈춰.</p><div class="upgrade-choices">${arena.choice.map((c, i) => `<button class="btn augment-${c.kind === "weapon" ? "weapon" : c.id}" data-run-upgrade="${i}"><span class="augment-icon">${survivalIcon(c.kind === "weapon" ? c.id : c.id)}</span><em>${c.kind === "weapon" ? "무기" : "능력 강화"}</em><strong>${i + 1}. ${c.name} LV.${c.level}</strong><small>${c.desc}</small></button>`).join("")}</div>`;
       bind("run-upgrade", (i) => {
         arena.choose(Number(i));
         overlayState = "";
@@ -798,7 +817,7 @@ function startSurvival(map = 0) {
       ctx.fillStyle = "#f3cd70";
       ctx.font = "bold 14px Neo,monospace";
       ctx.textAlign = "center";
-      ctx.fillText(e.name, 0, -size / 2 - 12);
+      ctx.fillText(e.name + (e.final ? " (최종보스)" : ""), 0, -size / 2 - 12);
       ctx.fillText("♛", 0, -size / 2 + 2);
     } else {
       ctx.fillStyle = "#563f37";
@@ -843,6 +862,54 @@ function startSurvival(map = 0) {
           ctx.fillRect(x - camX, y - camY, 63, 1);
         }
       }
+    // Deterministic scenery lives in world coordinates and never blocks combat.
+    for (let gy = Math.floor(camY / 240) * 240; gy < camY + 740; gy += 240)
+      for (let gx = Math.floor(camX / 240) * 240; gx < camX + 1100; gx += 240) {
+        const seed = Math.abs(Math.sin(gx * 0.017 + gy * 0.031));
+        if (seed < 0.48) continue;
+        const x = gx - camX + 60,
+          y = gy - camY + 90;
+        ctx.save();
+        ctx.globalAlpha = 0.58;
+        if (map === 0) {
+          ctx.fillStyle = "#6c855e";
+          ctx.fillRect(x - 20, y - 8, 40, 14);
+          ctx.fillStyle = "#8ba16a";
+          ctx.fillRect(x - 25, y - 22, 50, 19);
+          ctx.fillRect(x - 15, y - 29, 30, 14);
+          ctx.fillStyle = "#e8d693";
+          for (let i = 0; i < 3; i++)
+            ctx.fillRect(x - 13 + i * 12, y - 17, 3, 3);
+        } else if (map === 1) {
+          ctx.fillStyle = "#685747";
+          ctx.fillRect(x - 24, y - 20, 48, 32);
+          ctx.fillStyle = "#c0a077";
+          ctx.fillRect(x - 26, y - 23, 52, 5);
+          ctx.fillRect(x - 26, y + 9, 52, 5);
+          for (let i = 0; i < 4; i++) {
+            ctx.fillStyle = ["#c89f7d", "#9ca68b", "#baa2ab"][i % 3];
+            ctx.fillRect(x - 20 + i * 12, y - 14, 9, 18);
+          }
+        } else {
+          ctx.fillStyle = "#252d42";
+          ctx.fillRect(x - 25, y - 25, 50, 38);
+          ctx.strokeStyle = "#d47faf";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x - 25, y - 25, 50, 38);
+          ctx.fillStyle = "#9bd9e0";
+          ctx.font = "12px Neo";
+          ctx.textAlign = "center";
+          ctx.fillText("MEOW", x, y - 6);
+          ctx.fillStyle = "#b47fbc";
+          ctx.fillRect(x - 15, y + 4, 30, 2);
+        }
+        ctx.restore();
+      }
+    const shade = ctx.createRadialGradient(430, 250, 160, 430, 250, 570);
+    shade.addColorStop(0, "#00000000");
+    shade.addColorStop(1, map === 2 ? "#14152e77" : "#28342433");
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, 860, 500);
     ctx.strokeStyle = map === 2 ? "#b38bc2" : "#6f7751";
     ctx.lineWidth = 12;
     ctx.strokeRect(-camX, -camY, 2400, 1800);
@@ -871,37 +938,33 @@ function startSurvival(map = 0) {
         ctx.fill();
         ctx.stroke();
       }
+      if (z.friendly) {
+        ctx.fillStyle = "#ffd4ab";
+        for (let i = 0; i < 7; i++) {
+          const a = i * 2.4 + arena.time;
+          ctx.beginPath();
+          ctx.arc(
+            Math.cos(a) * z.r * 0.6,
+            Math.sin(a) * z.r * 0.6,
+            3 + Math.sin(a) * 2,
+            0,
+            Math.PI * 2,
+          );
+          ctx.fill();
+        }
+        drawItem(ctx, 0, 0, 26, 5, arena.time);
+      }
       ctx.restore();
     }
     for (const g of arena.gems) {
       const x = g.x - camX,
         y = g.y - camY;
-      ctx.fillStyle = "#8ae5ce";
-      ctx.beginPath();
-      ctx.moveTo(x, y - 6);
-      ctx.lineTo(x + 4, y);
-      ctx.lineTo(x, y + 6);
-      ctx.lineTo(x - 4, y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = "#4c947c";
-      ctx.stroke();
+      drawItem(ctx, x, y, 20, g.icon || 0, arena.time);
     }
     for (const l of arena.loot) {
       const x = l.x - camX,
         y = l.y - camY;
-      ctx.font = "19px Neo";
-      ctx.fillStyle =
-        l.kind === "coin"
-          ? "#ffdc7c"
-          : l.kind === "magnet"
-            ? "#9be9e0"
-            : "#e5bb8b";
-      ctx.fillText(
-        l.kind === "coin" ? "◈" : l.kind === "magnet" ? "U" : "▣",
-        x,
-        y,
-      );
+      drawItem(ctx, x, y, 32, l.kind, arena.time);
     }
     arena.enemies.forEach((e) => drawEnemy(e, camX, camY));
     const px = p.x - camX,
@@ -928,16 +991,16 @@ function startSurvival(map = 0) {
       const n = 2 + Math.floor(arena.weapons[3] / 2);
       for (let i = 0; i < n; i++) {
         const a = arena.time * 2.5 + (i / n) * Math.PI * 2;
-        ctx.fillStyle = arena.evolved(3) ? "#f6d47d" : "#d6a1bd";
+        const ox = px + Math.cos(a) * 85,
+          oy = py + Math.sin(a) * 85;
+        ctx.save();
+        ctx.strokeStyle = "#e9a4d466";
+        ctx.lineWidth = 12;
         ctx.beginPath();
-        ctx.arc(
-          px + Math.cos(a) * 85,
-          py + Math.sin(a) * 85,
-          9,
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
+        ctx.arc(px, py, 85, a - 0.6, a);
+        ctx.stroke();
+        ctx.restore();
+        drawItem(ctx, ox, oy, 28, 3, arena.time, false);
       }
     }
     for (const b of arena.shots) {
@@ -955,7 +1018,16 @@ function startSurvival(map = 0) {
       ctx.translate(x, y);
       ctx.rotate(Math.atan2(b.dy, b.dx));
       ctx.fillStyle = b.friendly ? "#a5e4e4" : "#edacb2";
-      ctx.fillRect(-8, -4, 16, 8);
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = 12;
+      ctx.fillRect(-32, -2, 26, 4);
+      ctx.shadowBlur = 0;
+      if (b.friendly) drawItem(ctx, 0, 0, 28, 1, arena.time, false);
+      else {
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
       if (b.friendly) {
         ctx.beginPath();
         ctx.moveTo(-8, 0);
@@ -973,11 +1045,46 @@ function startSurvival(map = 0) {
       ctx.strokeStyle = e.color;
       ctx.fillStyle = e.color;
       ctx.lineWidth = e.kind === "slash" ? 7 : 3;
-      if (e.kind === "beam") {
+      ctx.shadowColor = e.color;
+      ctx.shadowBlur = 18;
+      if (e.kind === "spark") {
+        for (let i = 0; i < 6; i++) {
+          const a = (i * Math.PI) / 3,
+            d = (1 - e.life / e.max) * e.r;
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(a) * d * 0.3, y + Math.sin(a) * d * 0.3);
+          ctx.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d);
+          ctx.stroke();
+        }
+      } else if (e.kind === "slash") {
+        ctx.translate(x, y);
+        ctx.rotate(e.angle);
+        const q = 1 - e.life / e.max;
+        for (let i = -1; i <= 1; i++) {
+          ctx.save();
+          ctx.rotate(i * 0.26 + (q - 0.5) * 0.8);
+          ctx.fillStyle = e.color;
+          ctx.beginPath();
+          ctx.moveTo(5, -e.r * 0.64 + i * 7);
+          ctx.quadraticCurveTo(e.r * 1.1, -e.r * 0.6, e.r * 0.72, e.r * 0.56);
+          ctx.quadraticCurveTo(e.r * 0.65, -e.r * 0.15, 5, -e.r * 0.64 + i * 7);
+          ctx.fill();
+          ctx.strokeStyle = "#fffaf0";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(12, -e.r * 0.58 + i * 7);
+          ctx.quadraticCurveTo(e.r * 0.9, -e.r * 0.45, e.r * 0.72, e.r * 0.56);
+          ctx.stroke();
+          ctx.restore();
+        }
+      } else if (e.kind === "beam") {
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x + Math.cos(e.angle) * e.r, y + Math.sin(e.angle) * e.r);
-        ctx.lineWidth = 9;
+        ctx.lineWidth = 18;
+        ctx.stroke();
+        ctx.strokeStyle = "#fff6fd";
+        ctx.lineWidth = 5;
         ctx.stroke();
       } else if (e.kind === "death") {
         for (let i = 0; i < 7; i++) {
@@ -986,6 +1093,22 @@ function startSurvival(map = 0) {
           ctx.fillRect(x + Math.cos(a) * d - 2, y + Math.sin(a) * d - 2, 5, 5);
         }
       } else {
+        if (e.kind === "ring") {
+          drawItem(ctx, x, y, 30, 2, arena.time);
+          for (let n = 0; n < 2; n++) {
+            ctx.lineWidth = 2 + n * 3;
+            ctx.globalAlpha *= 0.8;
+            ctx.beginPath();
+            ctx.arc(
+              x,
+              y,
+              e.r * (1 - (e.life / e.max) * 0.5) + n * 12,
+              0,
+              Math.PI * 2,
+            );
+            ctx.stroke();
+          }
+        }
         ctx.beginPath();
         ctx.arc(
           x,
@@ -1022,7 +1145,9 @@ function startSurvival(map = 0) {
     document.getElementById("runTime").textContent =
       `${String(Math.floor(arena.time / 60)).padStart(2, "0")}:${String(Math.floor(arena.time % 60)).padStart(2, "0")}`;
     document.getElementById("runHP").textContent =
-      `♥ ${p.hp}/${p.maxHP} · LV.${arena.level}`;
+      `춘배 체력 ${Math.ceil(p.hp)} / ${p.maxHP} · LV.${arena.level}`;
+    document.getElementById("heroHP").max = p.maxHP;
+    document.getElementById("heroHP").value = p.hp;
     document.getElementById("runKills").textContent = `${arena.kills} 처치`;
     document.getElementById("runXP").max = arena.needed();
     document.getElementById("runXP").value = arena.xp;
@@ -1031,17 +1156,24 @@ function startSurvival(map = 0) {
       .filter((e) => e.boss && e.hp > 0)
       .map(
         (e) =>
-          `<div><span>${e.final ? "최종" : "중간"} · ${e.name}</span><progress value="${e.hp}" max="${e.maxHP}"></progress><small>${Math.ceil(e.hp)}/${Math.ceil(e.maxHP)}</small></div>`,
+          `<div><span>${e.name} ${e.final ? "(최종보스)" : "(중간보스)"}</span><progress value="${e.hp}" max="${e.maxHP}"></progress><small>${Math.ceil(e.hp)}/${Math.ceil(e.maxHP)}</small></div>`,
       )
       .join("");
-    document.getElementById("runBuild").textContent = arena.weapons
-      .map((lv, i) =>
-        lv
-          ? `${arena.evolved(i) ? "✦ 진화 " : ""}${SURVIVAL_WEAPONS[i].name} ${lv}`
+    const build =
+      arena.weapons
+        .map((lv, i) =>
+          lv
+            ? `<div class="build-item augment-weapon"><span>${survivalIcon(i)}</span><strong>${SURVIVAL_WEAPONS[i].name}</strong><small>${arena.evolved(i) ? "✦ 진화" : "LV." + lv + " / 5"}</small></div>`
+            : "",
+        )
+        .join("") +
+      SURVIVAL_PASSIVES.map((p) =>
+        arena.passives[p.id]
+          ? `<div class="build-item augment-${p.id}"><span>${survivalIcon(p.id)}</span><strong>${p.name}</strong><small>LV.${arena.passives[p.id]} / 3</small></div>`
           : "",
-      )
-      .filter(Boolean)
-      .join(" · ");
+      ).join("");
+    const buildNode = document.getElementById("runBuild");
+    if (buildNode.innerHTML !== build) buildNode.innerHTML = build;
   }
   const down = (e) => {
     if (modal.open) return;
@@ -1148,4 +1280,134 @@ function startSurvival(map = 0) {
     if (!settled) finish(true);
   });
   canvas.focus({ preventScroll: true });
+}
+
+function survivalIcon(id) {
+  const paths = {
+    0: '<path d="M5 25Q5 12 14 4Q10 15 11 25ZM14 27Q14 13 23 5Q19 17 20 27ZM23 28Q23 17 30 11Q28 20 29 28Z" fill="#faf4d8" stroke="#725d42"/>',
+    1: '<path d="M10 16L2 9V23Z" fill="#65bdd6"/><ellipse cx="19" cy="16" rx="11" ry="8" fill="#85d8e6"/><path d="M15 10L20 6L23 10" fill="#e1b65f"/><circle cx="25" cy="14" r="2" fill="#21343d"/><path d="M11 17H20" stroke="#3e879b"/>',
+    2: '<path d="M5 23L8 18V11Q16 -1 24 11V18L27 23Z" fill="#eebf51" stroke="#835733"/><circle cx="16" cy="27" r="3" fill="#a97c37"/><path d="M11 11V18" stroke="#fff3c5" stroke-width="3"/>',
+    3: '<circle cx="16" cy="16" r="13" fill="#d48bc4" stroke="#774b7d"/><path d="M5 10L26 21M4 17L22 28M10 4L28 15M8 25Q7 8 23 5M15 29Q15 14 28 10" fill="none" stroke="#955887" stroke-width="2"/>',
+    4: '<path d="M2 16Q16 2 30 16Q16 30 2 16Z" fill="#c3e8c5" stroke="#456853"/><path d="M16 8V24" stroke="#f179bb" stroke-width="5"/><path d="M1 16H31" stroke="#fff" stroke-width="2"/>',
+    5: '<path d="M5 9H27V26Q16 32 5 26Z" fill="#d7825a" stroke="#744335"/><ellipse cx="16" cy="9" rx="11" ry="5" fill="#d8ddd6" stroke="#6f787c"/><path d="M11 9H21M9 18H23" stroke="#f8edda" stroke-width="3"/>',
+  };
+  if (paths[id])
+    return `<svg viewBox="0 0 32 32" class="item-icon" aria-hidden="true">${paths[id]}</svg>`;
+  return (
+    {
+      power: "⚔",
+      range: "↔",
+      speed: "🐾",
+      vamp: "🩸",
+      magnet: "🧲",
+      luck: "🍀",
+    }[id] || "♥"
+  );
+}
+function drawItem(c, x, y, size, kind, t = 0, framed = true) {
+  c.save();
+  c.translate(x, y + Math.sin(t * 4 + x) * 2);
+  c.scale(size / 32, size / 32);
+  c.shadowColor = "#ffdf7d";
+  c.shadowBlur = 9;
+  c.fillStyle = "#342c35";
+  c.strokeStyle = "#ffe4a2";
+  c.lineWidth = 2;
+  if (framed) {
+    c.beginPath();
+    c.roundRect(-16, -16, 32, 32, 7);
+    c.fill();
+    c.stroke();
+  }
+  c.shadowBlur = 0;
+  c.lineWidth = 2;
+  c.strokeStyle = "#332a30";
+  if (kind === 0) {
+    c.strokeStyle = "#fff4d3";
+    c.lineWidth = 3;
+    for (let i = -1; i <= 1; i++) {
+      c.beginPath();
+      c.moveTo(-9, i * 6 + 4);
+      c.quadraticCurveTo(0, i * 6 - 8, 10, i * 6 - 6);
+      c.stroke();
+    }
+  } else if (kind === 1) {
+    c.fillStyle = "#72cee1";
+    c.beginPath();
+    c.ellipse(1, 0, 10, 6, 0, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.beginPath();
+    c.moveTo(-7, 0);
+    c.lineTo(-13, -7);
+    c.lineTo(-13, 7);
+    c.closePath();
+    c.fill();
+    c.fillStyle = "#142838";
+    c.fillRect(6, -3, 3, 3);
+  } else if (kind === 2) {
+    c.fillStyle = "#ffd46b";
+    c.beginPath();
+    c.moveTo(-10, 7);
+    c.quadraticCurveTo(-7, 3, -7, -5);
+    c.quadraticCurveTo(0, -15, 7, -5);
+    c.lineTo(10, 7);
+    c.closePath();
+    c.fill();
+    c.stroke();
+    c.beginPath();
+    c.arc(0, 10, 3, 0, Math.PI * 2);
+    c.fill();
+  } else if (kind === 3) {
+    c.fillStyle = "#e999ce";
+    c.beginPath();
+    c.arc(0, 0, 11, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.strokeStyle = "#974572";
+    for (let i = -6; i <= 6; i += 4) {
+      c.beginPath();
+      c.moveTo(-9, i);
+      c.quadraticCurveTo(0, i + 7, 9, i);
+      c.stroke();
+    }
+  } else if (kind === 4) {
+    c.fillStyle = "#fa91da";
+    c.beginPath();
+    c.moveTo(0, -13);
+    c.lineTo(4, -3);
+    c.lineTo(13, 0);
+    c.lineTo(4, 3);
+    c.lineTo(0, 13);
+    c.lineTo(-4, 3);
+    c.lineTo(-13, 0);
+    c.lineTo(-4, -3);
+    c.closePath();
+    c.fill();
+  } else if (kind === 5 || kind === "chest") {
+    c.fillStyle = "#ed9c75";
+    c.fillRect(-10, -8, 20, 18);
+    c.strokeRect(-10, -8, 20, 18);
+    c.fillStyle = "#e8e5d6";
+    c.beginPath();
+    c.ellipse(0, -8, 10, 4, 0, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.fillStyle = "#643b36";
+    c.font = "bold 12px monospace";
+    c.textAlign = "center";
+    c.fillText("FISH", 0, 6);
+  } else {
+    c.fillStyle = "#ffe07a";
+    c.font = "bold 24px monospace";
+    c.textAlign = "center";
+    c.fillText(kind === "coin" ? "G" : "U", 0, 8);
+  }
+  c.strokeStyle = "#ffffffb0";
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(-11, -9);
+  c.lineTo(-5, -12);
+  c.stroke();
+  c.restore();
 }

@@ -8,7 +8,14 @@ const test = (name, fn) => {
   count++;
   console.log("✓", name);
 };
-const fresh = (o = {}) => E.normalize({ character: "chunbae", ...o });
+const fresh = (o = {}) =>
+  E.normalize({
+    character: "chunbae",
+    eventDay: 1,
+    weather: "sun",
+    event: null,
+    ...o,
+  });
 test("old saves migrate once, retain items/name/wealth and do not replay intro", () => {
   const s = fresh({
     version: 2,
@@ -31,23 +38,28 @@ test("catalog price multipliers, ten toys and house waking values", () => {
   assert.deepEqual(
     E.treats.map((x) => [x.cost, x.diamond]),
     [
-      [100, 0],
-      [500, 0],
-      [1500, 1],
+      [400, 0],
+      [1100, 0],
+      [2200, 1],
     ],
   );
   assert.deepEqual(
     E.toys.slice(0, 3).map((x) => x.cost),
-    [270, 540, 1050],
+    [600, 840, 1080],
   );
   assert.equal(E.toys.length, 10);
+  assert.equal(E.weapons.length, 10);
+  assert.equal(E.armors.length, 10);
+  const equipped = fresh({ weapon: 9, armor: 9 });
+  assert.ok(E.stats(equipped).attack > E.stats(fresh()).attack);
+  assert.ok(E.stats(equipped).hp > E.stats(fresh()).hp);
   assert.deepEqual(
     E.vehicles.map((x) => x.cost),
-    [5000, 24000, 60000],
+    [5000, 24000, 300000],
   );
   assert.equal(E.jobs[0].hire, 5500);
   assert.equal(E.buildings[0].cost, 18000);
-  assert.equal(E.companies[0].cost, 45000);
+  assert.equal(E.companies[0].cost, 900000);
   assert.equal(E.houses[1].cost, 3500);
   assert.deepEqual(
     E.houses.map((x) => x.wake),
@@ -114,7 +126,7 @@ test("limited treat stock purchases are atomic and gifting/feed use separate cap
   assert.equal(s.gold, 5000);
   assert.ok(E.purchase(s, "treat", 0));
   assert.equal(E.purchase(s, "treat", 0), false);
-  assert.equal(s.gold, 4900);
+  assert.equal(s.gold, 4600);
   assert.ok(E.feedTreat(s, 0));
   assert.ok(E.feedTreat(s, 0, true));
   assert.equal(E.feedTreat(s, 0), false);
@@ -195,17 +207,21 @@ test("work ten-level progression, house/car perks, free activities during work",
   s.workDays[0] = 2;
   assert.ok(E.promote(s, 0));
   assert.equal(s.workLevels[0], 2);
-  assert.equal(E.jobPay(s, 0), Math.floor(28 * 1.5 * 1.4));
+  assert.equal(E.jobPay(s, 0), Math.floor(28 * 2 * 1.5 * 1.2 * 1.15 * 1.25));
   assert.ok(E.hire(s, 0));
-  for (let i = 1; i < 10; i++) assert.ok(E.promote(s, 0, true));
+  assert.ok(E.promote(s, 0, true));
+  assert.equal(E.promote(s, 0, true), false);
+  s.workLevels[0] = 10;
+  for (let i = 2; i < 10; i++) assert.ok(E.promote(s, 0, true));
   assert.equal(s.staffLevels[0], 10);
   assert.equal(E.promote(s, 0, true), false);
   s.workLevels[0] = 10;
   assert.equal(E.promote(s, 0), false);
-  const old = s.gold;
+  const old = s.gold,
+    pay = E.jobPay(s, 0) + E.jobPay(s, 0, true);
   E.nextDay(s);
   assert.equal(s.workDays[0], 3);
-  assert.equal(s.gold, old + E.jobPay(s, 0) + E.jobPay(s, 0, true));
+  assert.equal(s.gold, old + pay);
   assert.equal(s.daily.work, 0);
 });
 test("daily company stock, passive income, housing mood and visible deltas settle once", () => {
@@ -225,9 +241,12 @@ test("daily company stock, passive income, housing mood and visible deltas settl
   assert.deepEqual(s.lastDayDelta, {
     day: 2,
     gold: 175,
+    netGold: 175,
     diamonds: 0,
     energy: 75,
     happiness: 6,
+    fans: 0,
+    affection: 0,
   });
   E.normalize(s);
   assert.equal(s.stocks[0], 1);
@@ -245,7 +264,7 @@ test("daily market ranges stay positive and within advertised bounds", () => {
     }
     for (let i = 0; i < 3; i++) {
       const ratio = s.market.coin[i] / before.coin[i];
-      assert.ok(ratio >= 0.1 - 1e-9 && ratio <= 2.5 + 1e-9);
+      assert.ok(ratio >= 0.01 - 1e-9 && ratio <= 3 + 1e-9);
       assert.ok(s.market.coin[i] >= 1);
     }
   }
@@ -359,10 +378,16 @@ test("survival boss clocks, upgrade pauses, evolution, dodge and death", () => {
   assert.ok(a.lost);
 });
 test("boss clock advances during hit-stop but stays paused during level choices", () => {
-  const a = new CatSurvival({ hp: 80, attack: 8, defense: 1 }, 0, 1, () => .5);
-  a.time = 179.99; a.hitStop = 1; a.update(.02, {});
-  assert.ok(a.finalSpawned); assert.ok(a.time >= 180);
-  a.choice = a.options(); const t = a.time; a.update(1, {}); assert.equal(a.time, t);
+  const a = new CatSurvival({ hp: 80, attack: 8, defense: 1 }, 0, 1, () => 0.5);
+  a.time = 179.99;
+  a.hitStop = 1;
+  a.update(0.02, {});
+  assert.ok(a.finalSpawned);
+  assert.ok(a.time >= 180);
+  a.choice = a.options();
+  const t = a.time;
+  a.update(1, {});
+  assert.equal(a.time, t);
 });
 function seeded(n) {
   return () => {
@@ -407,4 +432,94 @@ test("all three maps run through 1-minute/3-minute boss events and clear by comb
     assert.ok(a.level > 5);
   }
 });
-console.log(`PASS ${count} v3 scenario groups`);
+test("calendar, fame, mood and multiplicative bonuses", () => {
+  assert.deepEqual(E.calendar(112), { year: 1, season: "WINTER", date: 28 });
+  assert.deepEqual(E.calendar(113), { year: 2, season: "SPRING", date: 1 });
+  const s = fresh({
+    followers: 5000,
+    happiness: 100,
+    house: 2,
+    romance: { stage: 1, kind: 0, affection: 3 },
+  });
+  assert.equal(E.fameBonus(s), 0.15);
+  assert.ok(Math.abs(E.bonus(s) - (1.15 * 1.5 * 1.1 * 1.08 - 1)) < 1e-8);
+  for (const [n, b] of [
+    [100, 0.05],
+    [1000, 0.1],
+    [10000, 0.2],
+    [30000, 0.25],
+    [50000, 0.3],
+    [100000, 0.5],
+    [1000000, 1],
+  ]) {
+    s.followers = n;
+    assert.equal(E.fameBonus(s), b);
+  }
+});
+test("job gates, staff cap, price changes, drive gate and equipment ten levels", () => {
+  const s = fresh({ gold: 1e8 });
+  assert.equal(E.startJob(s, 1), false);
+  assert.equal(E.hire(s, 1), false);
+  s.workLevels[0] = 10;
+  assert.ok(E.jobUnlocked(s, 1));
+  assert.equal(E.promotion(fresh(), 0).cost, 1000);
+  assert.equal(E.drive(s), null);
+  s.vehicles = [0];
+  assert.equal(E.drive(s), null);
+  s.romance = { kind: 0, stage: 0, affection: 0 };
+  assert.ok(E.drive(s));
+  assert.equal(s.romance.affection, 0.1);
+  s.weaponUp = 9;
+  assert.ok(E.upgradeCost(s, "weapon") > 0);
+  s.weaponUp = 10;
+  assert.equal(E.upgradeCost(s, "weapon"), 0);
+});
+test("average cost, realized loss and automatic liquidation", () => {
+  const s = fresh({ gold: 100000 });
+  const p = E.price(s, "stock", 0);
+  assert.ok(E.trade(s, "stock", 0, "buy", 2));
+  s.market.stock[0] = p * 2;
+  assert.ok(E.trade(s, "stock", 0, "buy", 2));
+  assert.equal(s.costBasis.stock[0], p * 6);
+  assert.ok(E.trade(s, "stock", 0, "sell", 1));
+  assert.equal(s.costBasis.stock[0], p * 4.5);
+  assert.equal(s.realized.stock, p * 2 * 0.96 - p * 1.5);
+  s.market.stock[0] = 1;
+  const report = [];
+  E.liquidate(s, report);
+  assert.equal(s.stocks[0], 0);
+  assert.ok(report.length);
+});
+test("lifesteal only heals actual dealt damage and respects maximum health", () => {
+  const a = new CatSurvival(
+    { hp: 100, attack: 8, defense: 1 },
+    0,
+    1,
+    () => 0.5,
+  );
+  a.player.hp = 50;
+  a.passives.vamp = 1;
+  const e = { hp: 10, x: 0, y: 0, boss: false, type: 0 };
+  a.damage(e, 100);
+  assert.equal(a.player.hp, 51);
+  a.player.hp = 99;
+  a.passives.vamp = 3;
+  a.damage({ hp: 100, x: 0, y: 0 }, 100);
+  assert.equal(a.player.hp, 100);
+});
+test("rain stays across reload, hospital mood30, and event choices settle once", () => {
+  const s = fresh({ energy: 50, gold: 0 });
+  s.weather = "rain";
+  E.normalize(s);
+  assert.equal(s.weather, "rain");
+  s.event = { id: 7, resolved: false };
+  assert.equal(E.resolveEvent(s, "pay"), false);
+  assert.ok(E.resolveEvent(s, "fight"));
+  assert.equal(s.energy, 0);
+  assert.equal(E.resolveEvent(s, "fight"), false);
+  s.hospital = true;
+  E.heal(s);
+  assert.equal(s.happiness, 30);
+  assert.equal(s.energy, 0);
+});
+console.log(`PASS ${count} v4 scenario groups`);

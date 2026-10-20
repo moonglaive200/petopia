@@ -1,9 +1,10 @@
 function renderArcade() {
   gameShell(
-    `<div class="neon-lobby">${title("OPEN ALL NIGHT · CLOSED WHEN SLEEPY", "방앗간 ARCADE", "집사는 여길 그냥 방앗간이라고 부른다.")}<div class="neon-sign">MEOW • PLAY • REPEAT</div><div class="destination-grid three"><button class="destination" data-arcade="claw"><span>♙</span><h2>인형뽑기</h2><p>직접 집게 조작<br>다이아 · 장난감 · 츄르</p></button><button class="destination" data-arcade="rhythm"><span>♫</span><h2>리듬게임</h2><p>D F J K · 4키<br>정확히 맞춰 다이아 획득</p></button><button class="destination" data-arcade="hex"><span>⬡</span><h2>오락하기!</h2><p>네가 만든 HEX FINALE<br>큰 고양이와 작은 고양이</p></button></div><p class="note">산책 입장 때 기력 25를 사용했어. 각 게임은 금화 참가비만 사용. 나가거나 새로고침하면 진행 중인 판은 종료돼.</p></div>`,
+    `<div class="neon-lobby">${title("OPEN ALL NIGHT · CLOSED WHEN SLEEPY", "방앗간 ARCADE", "집사는 여길 그냥 방앗간이라고 부른다.")}<div class="neon-sign">MEOW • PLAY • REPEAT</div><div class="destination-grid three"><button class="destination" data-arcade="claw"><span>♙</span><h2>인형뽑기</h2><p>직접 집게 조작<br>다이아 · 장난감 · 츄르</p></button><button class="destination" data-arcade="rhythm" disabled><span>♫</span><h2>냥냥비트 🔒</h2><p>개발 중 · 입장 불가</p></button><button class="destination" data-arcade="hex"><span>⬡</span><h2>오락하기!</h2><p>네가 만든 HEX FINALE<br>큰 고양이와 작은 고양이</p></button></div><p class="note">산책 입장 때 기력 25를 사용했어. 각 게임은 금화 참가비만 사용. 나가거나 새로고침하면 진행 중인 판은 종료돼.</p></div>`,
     renderWalk,
   );
   bind("arcade", (id) => {
+    if (id === "rhythm") return;
     const s = player(),
       fee = id === "claw" ? 20 : 15;
     if (!E.canAct(s) || !E.spend(s, fee)) {
@@ -20,6 +21,8 @@ function finishArcade(gold, diamonds, message) {
   if (!s.arcadeSession) return;
   s.gold += gold;
   s.diamonds += diamonds;
+  s.earned.gold += gold;
+  s.earned.diamonds += diamonds;
   s.arcadeSession = null;
   completeOuting();
   save();
@@ -55,7 +58,7 @@ function renderClaw() {
   ];
   const input = { left: false, right: false };
   gameShell(
-    `<div class="neon-lobby">${title("CLAW MACHINE", "춘배의 집게손", "← → 또는 A/D로 이동하고 Space로 내려! 정중앙 ±13이면 확정 성공.")}<canvas id="clawCanvas" width="560" height="350" class="mini-canvas" tabindex="0" aria-label="인형뽑기"></canvas><p id="clawStatus" role="status">잡고 싶은 선물 위로 집게를 옮겨 봐.</p><div class="choice-row"><button class="btn" id="clawLeft">← 왼쪽</button><button class="btn primary" id="clawDrop">집게 내리기 · Space</button><button class="btn" id="clawRight">오른쪽 →</button></div><button class="text-button" id="clawExit">방앗간으로</button></div>`,
+    `<div class="neon-lobby">${title("CLAW MACHINE", "춘배의 집게손", "← → 또는 A/D로 이동하고 Space로 내려! 움직이는 선물의 도착 위치를 예상해 잡자!")}<canvas id="clawCanvas" width="560" height="350" class="mini-canvas" tabindex="0" aria-label="인형뽑기"></canvas><p id="clawStatus" role="status">잡고 싶은 선물 위로 집게를 옮겨 봐.</p><div class="choice-row"><button class="btn" id="clawLeft">← 왼쪽</button><button class="btn primary" id="clawDrop">집게 내리기 · Space</button><button class="btn" id="clawRight">오른쪽 →</button></div><button class="text-button" id="clawExit">방앗간으로</button></div>`,
     () => {
       cancelArcade();
       renderArcade();
@@ -68,13 +71,8 @@ function renderClaw() {
     if (phase !== "aim") return;
     phase = "down";
     document.querySelector("#clawDrop").disabled = true;
-    const nearest = prizes.reduce((a, b) =>
-      Math.abs(a.x - x) < Math.abs(b.x - x) ? a : b,
-    );
-    const distance = Math.abs(nearest.x - x);
-    success = distance <= 13 || (distance <= 23 && Math.random() < 0.35);
-    caught = success ? nearest : null;
   }
+
   function settle() {
     if (!s.arcadeSession || s.arcadeSession.token !== session.token) return;
     if (caught?.kind === "toy") {
@@ -98,6 +96,20 @@ function renderClaw() {
     const dt = Math.min(0.04, (now - last) / 1000 || 0);
     last = now;
     t += dt;
+    if (["aim", "down"].includes(phase))
+      for (let i = 0; i < prizes.length; i++) {
+        const z = prizes[i];
+        z.dir ??= i % 2 ? 1 : -1;
+        z.x += z.dir * (170 + i * 9) * dt;
+        if (z.x < 40) {
+          z.x = 40;
+          z.dir = 1;
+        }
+        if (z.x > 520) {
+          z.x = 520;
+          z.dir = -1;
+        }
+      }
     if (phase === "aim") {
       x = Math.max(
         40,
@@ -110,6 +122,11 @@ function renderClaw() {
       y += 180 * dt;
       if (y >= 235) {
         y = 235;
+        const nearest = prizes.reduce((a, b) =>
+          Math.abs(a.x - x) < Math.abs(b.x - x) ? a : b,
+        );
+        success = Math.abs(nearest.x - x) <= 17;
+        caught = success ? nearest : null;
         phase = "up";
       }
     } else if (phase === "up") {
@@ -389,7 +406,7 @@ function renderHex() {
     session = { ...s.arcadeSession },
     startedAt = performance.now();
   gameShell(
-    `${title("AFTERGLOW × PETOPIA", "오락하기!", "A/D 회전 · P 일시정지 · 큰 고양이를 중심으로 작은 고양이가 달려!")}<iframe id="hexFrame" class="hex-frame" title="고양이 HEX FINALE" src="games/hex.html?session=${session.token}" allow="autoplay"></iframe><p class="note">30초 생존 → 다이아 1 · 120초 생존 → 다이아 3. 결과는 슬롯에 한 번만 지급돼.</p>`,
+    `${title("AFTERGLOW × PETOPIA", "오락하기!", "A/D 회전 · P 일시정지 · 큰 고양이를 중심으로 작은 고양이가 달려!")}<iframe id="hexFrame" class="hex-frame" title="고양이 HEX FINALE" src="games/hex.html?session=${session.token}" allow="autoplay"></iframe><button class="btn wide" id="hexExit">방앗간으로</button><p class="note">30초 생존 → 다이아 1 · 120초 생존 → 다이아 3. 결과는 슬롯에 한 번만 지급돼.</p>`,
     () => {
       cancelArcade();
       renderArcade();
@@ -402,9 +419,16 @@ function renderHex() {
       { type: "petopia-mute", muted: !sound },
       location.origin === "null" ? "*" : location.origin,
     );
+  document.querySelector("#hexExit").onclick = () => {
+    cancelArcade();
+    renderArcade();
+  };
   let accepted = false;
   function receive(e) {
-    if (e.origin !== location.origin || e.source !== frame.contentWindow)
+    if (
+      (location.origin !== "null" && e.origin !== location.origin) ||
+      e.source !== frame.contentWindow
+    )
       return;
     const d = e.data;
     if (d?.type === "petopia-hex-exit") {

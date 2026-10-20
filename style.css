@@ -3534,4 +3534,421 @@ dialog {
   }
 }
 
-.chunbae-sprite { clip-path: inset(0 6px); }
+.chunbae-sprite {
+  clip-path: inset(0 6px);
+}
+/* v0.4 readability, daily life and survival */
+.back,
+.date-chip {
+  border: 2px solid #966e40 !important;
+  border-radius: 8px;
+  background: #f4d6a3 !important;
+  color: #47301c !important;
+  padding: 10px 15px !important;
+  box-shadow: 0 3px 0 #694728;
+  font-weight: bold;
+}
+.stats-six {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px;
+}
+.stats-six > div {
+  background: #fff0d4;
+  border: 2px solid #bd9565;
+  border-radius: 10px;
+  padding: 14px;
+  min-width: 0;
+}
+.stats-six strong {
+  font-size: 20px;
+}
+.stats-six span {
+  line-height: 1.5;
+}
+.gold-label {
+  color: #80510c !important;
+}
+.diamond-label {
+  color: #126478 !important;
+  font-weight: bold;
+  font-size: 17px !important;
+}
+.daily-strip {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.daily-strip > span {
+  border: 2px solid #bb9260;
+  background: #f5dfb9;
+  padding: 8px 12px;
+  border-radius: 7px;
+  color: #483020;
+}
+.game-top {
+  position: relative;
+  flex-wrap: wrap;
+}
+.day-label {
+  margin: auto !important;
+  text-align: center;
+  font-weight: bold;
+  font-size: 20px;
+  color: #50341e;
+}
+.day-label button {
+  border: 1px solid #ad8556;
+  border-radius: 5px;
+  background: #ffe7ba;
+  padding: 7px;
+  cursor: pointer;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.calendar-grid > div {
+  min-height: 52px;
+  background: #f2d6a7;
+  padding: 7px;
+  border: 1px solid #b38958;
+  border-radius: 4px;
+}
+.calendar-grid small {
+  display: block;
+  font-size: 10px;
+}
+.calendar-grid .today {
+  outline: 3px solid #9b522f;
+  background: #ffe9c4;
+}
+.portfolio,
+.event-banner {
+  padding: 18px;
+  background: #f9e6c6;
+  border: 2px solid #b48a55;
+  border-radius: 10px;
+  margin: 14px 0;
+  line-height: 1.7;
+}
+.portfolio p {
+  border-bottom: 1px solid #cfb18a;
+  padding: 9px;
+}
+.daily-log {
+  height: 100px;
+  overflow-y: auto;
+  padding: 8px 14px;
+  border: 2px solid #a88155;
+  background: #fff1d9;
+  border-radius: 8px;
+  line-height: 1.6;
+}
+.daily-log p {
+  margin: 3px 0;
+}
+.market-row small {
+  display: block;
+  font-size: 12px;
+}
+.market-row b {
+  min-width: 120px;
+}
+.hero-health {
+  flex: 1;
+  min-width: 240px;
+  max-width: 520px;
+  background: #302730;
+  border: 2px solid #f1c896;
+  border-radius: 9px;
+  padding: 10px;
+  color: #fff8e2;
+  font-weight: bold;
+  text-align: center;
+}
+.hero-health progress {
+  display: block;
+  width: 100%;
+  height: 27px;
+  margin-top: 7px;
+  accent-color: #e95e6d;
+}
+.hero-health progress::-webkit-progress-bar {
+  background: #4e2935;
+  border-radius: 6px;
+}
+.hero-health progress::-webkit-progress-value {
+  background: linear-gradient(#fc9c91, #df425e);
+  border-radius: 5px;
+  box-shadow: inset 0 3px #ffffff55;
+}
+.upgrade-choices .btn {
+  border: 3px solid var(--aug-border, #b77440) !important;
+  background: var(--aug-bg, #fce6c5) !important;
+  color: #302326 !important;
+  box-shadow: 0 5px 0 #31212777;
+  padding: 18px !important;
+  min-height: 185px;
+  text-align: center;
+}
+.upgrade-choices small {
+  color: #342b32 !important;
+  font-size: 16px !important;
+  line-height: 1.6;
+}
+.upgrade-choices strong {
+  font-size: 20px !important;
+}
+.upgrade-choices em {
+  display: block;
+  font-size: 12px;
+  margin: 6px;
+  font-style: normal;
+}
+.augment-icon {
+  display: block;
+  font-size: 38px;
+}
+.augment-weapon {
+  --aug-bg: #ffe0b4;
+  --aug-border: #ad6423;
+}
+.augment-power {
+  --aug-bg: #ffd1cd;
+  --aug-border: #b44343;
+}
+.augment-range {
+  --aug-bg: #d8d2fb;
+  --aug-border: #7660ba;
+}
+.augment-speed {
+  --aug-bg: #d4efed;
+  --aug-border: #357e82;
+}
+.augment-vamp {
+  --aug-bg: #f2cce2;
+  --aug-border: #a4356c;
+}
+.augment-magnet {
+  --aug-bg: #cce1fc;
+  --aug-border: #3d71b2;
+}
+.augment-luck {
+  --aug-bg: #e4edbd;
+  --aug-border: #6e8236;
+}
+.run-build {
+  display: flex !important;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: #302934 !important;
+  border-radius: 10px;
+}
+.build-item {
+  min-width: 100px;
+  flex: 0 0 110px;
+  background: var(--aug-bg);
+  border: 2px solid var(--aug-border);
+  border-radius: 8px;
+  padding: 9px;
+  color: #302326;
+  text-align: center;
+}
+.build-item > span {
+  display: block;
+  font-size: 32px;
+}
+.build-item strong,
+.build-item small {
+  display: block;
+  line-height: 1.5;
+  font-size: 13px;
+}
+.house-0 {
+  background: linear-gradient(
+    180deg,
+    #263348 0 54%,
+    #566072 54% 57%,
+    #46414a 57% 76%,
+    #303039 76%
+  ) !important;
+  border-color: #4f4240 !important;
+}
+.house-0:before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 20px 25% 43% 5% !important;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 20px, #654f4922 21px 23px),
+    repeating-linear-gradient(90deg, #6b5a58 0 58px, #403d48 60px 63px) !important;
+  border-bottom: 7px solid #242a35 !important;
+  width: auto !important;
+  height: auto !important;
+  transform: none !important;
+}
+.house-0 .window-pixel,
+.house-0 .wall-picture {
+  display: none !important;
+}
+.house-0 .floor-rug {
+  background: repeating-linear-gradient(
+    90deg,
+    #7c6553 0 15px,
+    #756052 15px 17px
+  ) !important;
+  border: 3px solid #a88b67 !important;
+  transform: rotate(-5deg);
+  border-radius: 0 !important;
+}
+.house-0 .speech {
+  background: #f3dfbf;
+}
+.street-lamp {
+  position: absolute;
+  right: 12%;
+  top: 4%;
+  height: 180px;
+  width: 7px;
+  background: #131e2c;
+}
+.street-lamp:before {
+  content: "";
+  position: absolute;
+  left: -24px;
+  width: 48px;
+  height: 35px;
+  background: #f2d98d;
+  box-shadow: 0 0 60px 30px #ffdc872b;
+  border: 6px solid #233040;
+}
+.street-bag {
+  position: absolute;
+  bottom: 23%;
+  left: 15%;
+  font-size: 43px;
+  color: #b59b72;
+}
+.street-paper {
+  position: absolute;
+  bottom: 15%;
+  left: 36%;
+  width: 100px;
+  padding: 8px;
+  color: #72675b;
+  background: #b5ab94;
+  font-size: 11px;
+  transform: rotate(6deg);
+}
+.rain-layer {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+}
+.raining .rain-layer {
+  display: block;
+  background: repeating-linear-gradient(
+    105deg,
+    transparent 0 35px,
+    #c8e7ff66 36px 38px,
+    transparent 39px 65px
+  );
+  animation: rain-fall 0.5s linear infinite;
+  opacity: 0.5;
+}
+.raining:not(.house-0) .rain-layer {
+  inset: 15px auto auto 8%;
+  width: 100px;
+  height: 100px;
+}
+.raining:after {
+  content: "☂ 비 오는 날";
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  background: #25354bdc;
+  color: #e7efff;
+  padding: 8px;
+  border-radius: 5px;
+  z-index: 4;
+}
+@keyframes rain-fall {
+  from {
+    background-position: 0 -60px;
+  }
+  to {
+    background-position: -16px 60px;
+  }
+}
+@media (max-width: 650px) {
+  .stats-six {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .stats-six strong {
+    font-size: 16px;
+  }
+  .hero-health {
+    min-width: 180px;
+    width: 100%;
+    order: 3;
+  }
+  .calendar-grid > div {
+    padding: 4px;
+    font-size: 12px;
+    min-height: 43px;
+  }
+  .build-item {
+    flex-basis: 90px;
+    min-width: 80px;
+  }
+  .market-row {
+    flex-wrap: wrap;
+  }
+  .game-top .wallet {
+    width: 100%;
+    justify-content: center;
+  }
+  .day-label {
+    font-size: 17px;
+  }
+  .upgrade-choices .btn {
+    min-height: 145px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rain-layer {
+    animation: none !important;
+  }
+}
+.item-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-block;
+  vertical-align: middle;
+  filter: drop-shadow(0 2px 0 #39253044);
+}
+.augment-icon .item-icon {
+  width: 52px;
+  height: 52px;
+}
+.event-tip {
+  display: block;
+  font-size: 14px;
+  color: #704426;
+}
+.boss-run-bars > div > span {
+  min-width: 160px;
+  line-height: 1.4;
+}
+.game-shell .dpad button {
+  background: #f7ddb1;
+  color: #4d3525;
+  border-color: #b38a55;
+}
+.daily-strip {
+  margin-top: 14px;
+}

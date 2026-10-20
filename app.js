@@ -17,7 +17,10 @@ function save() {
     localStorage.setItem("petopia.slots", JSON.stringify(slots));
     return true;
   } catch {
-    notice("저장 공간이 부족해. 설정에서 저장 파일을 내려받아 보관해 줘.");
+    notice(
+      "저장 공간이 부족해. 설정에서 저장 파일을 내려받아 보관해 줘.",
+      false,
+    );
     return false;
   }
 }
@@ -93,7 +96,7 @@ applyBackground();
 function lobby() {
   if (typeof cleanupView === "function") cleanupView();
   document.body.dataset.screen = "lobby";
-  app.innerHTML = `<section class="hero"><div class="eyebrow">A VERY ORDINARY CAT LIFE</div><h1 class="logo">PETOPIA</h1><div class="wood-sub">춘배와 집사의 이상한 하루</div><nav class="menu" aria-label="메인 메뉴"><button class="btn primary" id="start">▷ 시작하기</button><button class="btn" id="settings">⚙ 설정</button><button class="btn" id="credits">♡ 크레딧</button></nav><p class="version">VER. 0.3 · 냥생은 실전이다</p></section>`;
+  app.innerHTML = `<section class="hero"><div class="eyebrow">A VERY ORDINARY CAT LIFE</div><h1 class="logo">PETOPIA</h1><div class="wood-sub">춘배와 집사의 이상한 하루</div><nav class="menu" aria-label="메인 메뉴"><button class="btn primary" id="start">▷ 시작하기</button><button class="btn" id="settings">⚙ 설정</button><button class="btn" id="credits">♡ 크레딧</button></nav><p class="version">VER. 0.4 · 냥생은 실전이다</p></section>`;
   document.querySelector("#start").onclick = () => {
     meow();
     showSlots();
@@ -111,7 +114,17 @@ function showModal(title, body) {
   modal.querySelector(".btn").onclick = () => modal.close();
   modal.showModal();
 }
-function notice(message) {
+function notice(message, track = true) {
+  if (
+    track &&
+    document.body.dataset.screen === "game" &&
+    typeof player === "function" &&
+    selectedSlot !== null &&
+    slots[selectedSlot]
+  ) {
+    E.log(player(), message);
+    save();
+  }
   const el = document.querySelector("#toast");
   el.textContent = message;
   el.classList.add("show");

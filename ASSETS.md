@@ -43,3 +43,5 @@ All game assets are served locally; normal play does not request third-party CDN
 - `assets/monsters.png`: newly generated 12-enemy atlas for survival combat. No assets from the inspected external game repository were copied or distributed.
 - Gameplay/Live/intro movement is animated in Canvas/CSS, with hit flashes, particles and transforms layered over these images.
 - Camera shutter, impact, defeat and victory sounds are synthesized locally with Web Audio; the original licensed meow and supplied arcade music are retained.
+
+- v0.4의 증강 SVG 아이콘, Canvas 아이템·무기 이펙트, 골목 배경 및 비 효과는 이 저장소의 코드로 직접 그립니다. 추가 외부 이미지·음원은 사용하지 않습니다.
