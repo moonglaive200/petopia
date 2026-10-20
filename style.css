@@ -4075,3 +4075,114 @@ dialog {
     font-size: 12px !important;
   }
 }
+
+.claw-machine {
+  position: relative;
+  isolation: isolate;
+}
+.claw-machine .mini-canvas {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+}
+.claw-feedback {
+  position: absolute;
+  inset: 12% 0 auto;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  text-align: center;
+  z-index: 2;
+}
+.claw-feedback[hidden] {
+  display: none;
+}
+.claw-feedback strong {
+  font-family: Neo, monospace;
+  font-size: clamp(42px, 8vw, 76px);
+  line-height: 1.2;
+  letter-spacing: 3px;
+}
+.claw-feedback span {
+  background: #16172cda;
+  color: #fff0c9;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.catch-success strong {
+  color: #fff0a0;
+  -webkit-text-stroke: 2px #a86424;
+  text-shadow:
+    0 0 16px #ffb83d,
+    0 5px #503622;
+  animation: claw-catch-pop 0.55s ease-out;
+}
+.catch-success i {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  font-style: normal;
+  color: #ffe87d;
+  font-size: 22px;
+  animation: claw-spark 0.9s ease-out both;
+  --angle: calc(var(--i) * 30deg);
+}
+.catch-fail strong {
+  color: #a2adca;
+  text-shadow: 0 4px #172238;
+  animation: claw-fail-drop 0.8s ease-out;
+}
+.catch-fail span {
+  color: #aeb9d1;
+}
+.claw-machine canvas {
+  transition: filter 0.35s;
+}
+.claw-machine.is-failed canvas {
+  filter: grayscale(0.7) brightness(0.65);
+}
+@keyframes claw-catch-pop {
+  0% {
+    transform: scale(0.35) rotate(-8deg);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.15) rotate(3deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes claw-spark {
+  from {
+    transform: rotate(var(--angle)) translateY(0) scale(0.3);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--angle)) translateY(-100px) scale(1.1);
+    opacity: 0;
+  }
+}
+@keyframes claw-fail-drop {
+  from {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .claw-feedback strong,
+  .claw-feedback i {
+    animation: none;
+  }
+  .claw-machine canvas {
+    transition: none;
+  }
+}

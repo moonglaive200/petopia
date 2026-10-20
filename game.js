@@ -135,7 +135,7 @@ function renderHome() {
     `<div class="home-title"><div>${title("CHUNBAE’S LITTLE WORLD", "춘배의 방")}</div><span class="date-chip">${E.houses[s.house].name}</span></div><div class="pet-stage house-${s.house} ${s.weather === "rain" ? "raining" : ""}">${s.house === 0 ? `<div class="street-lamp"></div><div class="street-bag">▣</div><div class="street-paper">오늘의 냥보</div>` : ""}<div class="rain-layer"></div><div class="window-pixel"><span></span></div><div class="wall-picture">${["☁", "▣", "☂", "☀", "≈", "♛", "☾"][s.house]}</div><div class="speech">${s.hospital ? "집사야… 병원 좀…" : married ? "우리 둘이 같이 살아요. 집사는 출근해요." : "집사 이름으로 된 통장, 내가 지킨다."}</div><div class="home-cats">${spriteMarkup("chunbae", s.hospital ? "sad" : s.happiness > 80 ? "happy" : "normal", "breathing")}${married ? spriteMarkup(s.romance.kind, "happy", "breathing partner-at-home") : ""}</div><div class="floor-rug"></div><span class="stage-label">${married ? "춘배와 " + E.partners[s.romance.kind].name : "춘배 · 오늘도 함께"}</span></div><div class="status-strip stats-six"><div><small>레벨</small><strong>LV.${s.level}</strong><progress value="${s.xp}" max="${E.xpNeeded(s.level)}"></progress><span>${s.xp}/${E.xpNeeded(s.level)} XP</span></div><div><small>공격 / 방어</small><strong>${st.attack} / ${st.defense}</strong><span>체력 ${st.hp}</span></div><div><small>행복도</small><strong>${s.happiness}/100</strong><progress value="${s.happiness}" max="100"></progress><span class="happiness-bonus-note">수입 보너스 · 0~69: 없음<br>70~99: +20% · 100: +50%</span></div><div><small>유명세</small><strong>${money(s.followers + s.liveFollowers)}</strong><span>펫스타 + Live 팔로워</span></div><div><small>보유재화</small><strong class="gold-label">🪙 골드 ${money(s.gold)} G</strong><span class="diamond-label">💎 다이아 ${s.diamonds}개</span></div><div><small>수입 보너스</small><strong>+${(E.bonus(s) * 100).toFixed(1)}%</strong><span>유명세 × 행복도 × 연애 × 집<br>주인 일당 +${((1 + E.bonus(s)) * (1 + E.vehicleBonus(s)) * 100 - 100).toFixed(1)}%<br>탈것 추가 곱연산</span></div></div><div class="daily-strip"><span>던전 남음 ${1 - s.daily.dungeon}/1</span><span>유흥 남음 ${1 - s.daily.walk}/1</span><span>펫스타 ${s.daily.star}/1</span><span>Live ${Math.max(0, 3 - s.day + s.liveDay) ? `${3 - s.day + s.liveDay}일 후` : "가능"}</span></div><div class="section-heading"><h2>오늘의 냥생</h2><span>당일 기력 회복 불가</span></div><nav class="activity-grid six-activities">${[
       ["dungeon", "⚔", "냥서바이벌", "하루 1회 · 기력 −50 · 행복도 20 이상"],
       ["walk", "♧", "유흥", "하루 1회 · 기력 −25"],
-      ["work", "▣", "주인 일하고 오기", "근무 중에도 자유 활동 · 기력 −50"],
+      ["work", "▣", "주인 노동시키기", "근무 중에도 자유 활동 · 기력 −50"],
       ["romance", "♡", "연애", "썸냥이 만나기 · 기력 소모 없음"],
       [
         "influencer",
@@ -360,7 +360,7 @@ function renderWork() {
   const s = player(),
     h = E.houses[s.house];
   gameShell(
-    `${title("WORK HARD, NAP HARDER", "주인 일하고 오기", "일하러 보내도 다른 활동은 계속할 수 있어. 일당·경력은 다음 날 정산!")}<p class="tip-banner">하루 1회 · 주인 기력 −50<br>집 보너스 ${Math.round(h.work * 100)}% · 탈것 ${Math.round(E.vehicleBonus(s) * 100)}% (최고 1개만) · 각 수입 보너스 곱연산 · 직원 고용 할인 ${h.discount * 100}%</p><div class="shop-grid">${E.jobs
+    `${title("WORK HARD, NAP HARDER", "주인 노동시키기", "일하러 보내도 다른 활동은 계속할 수 있어. 일당·경력은 다음 날 정산!")}<p class="tip-banner">하루 1회 · 주인 기력 −50<br>집 보너스 ${Math.round(h.work * 100)}% · 탈것 ${Math.round(E.vehicleBonus(s) * 100)}% (최고 1개만) · 각 수입 보너스 곱연산 · 직원 고용 할인 ${h.discount * 100}%</p><div class="shop-grid">${E.jobs
       .map((j, i) => {
         const own = E.promotion(s, i),
           staff = E.promotion(s, i, true),

@@ -16,7 +16,7 @@ function renderArcade() {
     ({ claw: renderClaw, rhythm: renderRhythm, hex: renderHex })[id]();
   });
 }
-function finishArcade(gold, diamonds, message) {
+function finishArcade(gold, diamonds, message, happy = true) {
   const s = player();
   if (!s.arcadeSession) return;
   s.gold += gold;
@@ -27,7 +27,7 @@ function finishArcade(gold, diamonds, message) {
   completeOuting();
   save();
   activeActivity = false;
-  meow(1.15);
+  if (happy) meow(1.15);
   notice(
     `${message}${gold ? ` +${gold} G` : ""}${diamonds ? ` · 다이아 +${diamonds}` : ""}`,
   );
@@ -58,7 +58,7 @@ function renderClaw() {
   ];
   const input = { left: false, right: false };
   gameShell(
-    `<div class="neon-lobby">${title("CLAW MACHINE", "춘배의 집게손", "← → 또는 A/D로 이동하고 Space로 내려! 움직이는 선물의 도착 위치를 예상해 잡자!")}<canvas id="clawCanvas" width="560" height="350" class="mini-canvas" tabindex="0" aria-label="인형뽑기"></canvas><p id="clawStatus" role="status">잡고 싶은 선물 위로 집게를 옮겨 봐.</p><div class="choice-row"><button class="btn" id="clawLeft">← 왼쪽</button><button class="btn primary" id="clawDrop">집게 내리기 · Space</button><button class="btn" id="clawRight">오른쪽 →</button></div><button class="text-button" id="clawExit">방앗간으로</button></div>`,
+    `<div class="neon-lobby">${title("CLAW MACHINE", "춘배의 집게손", "← → 또는 A/D로 이동하고 Space로 내려! 움직이는 선물의 도착 위치를 예상해 잡자! 집게가 닿는 순간 중심 ±6 안에 정확히!")}<div class="claw-machine"><canvas id="clawCanvas" width="560" height="350" class="mini-canvas" tabindex="0" aria-label="인형뽑기"></canvas><div id="clawFeedback" class="claw-feedback" role="status" hidden></div></div><p id="clawStatus" role="status">잡고 싶은 선물 위로 집게를 옮겨 봐.</p><div class="choice-row"><button class="btn" id="clawLeft">← 왼쪽</button><button class="btn primary" id="clawDrop">집게 내리기 · Space</button><button class="btn" id="clawRight">오른쪽 →</button></div><button class="text-button" id="clawExit">방앗간으로</button></div>`,
     () => {
       cancelArcade();
       renderArcade();
@@ -85,11 +85,12 @@ function renderClaw() {
       caught?.kind === "diamond" ? caught.value : 0,
       success
         ? `${caught.name} 획득!`
-        : "앗, 집게가 허공을 잡았어. 다음엔 정중앙을 노려봐!",
+        : "fail.. 집게가 허공을 잡았어. 다음엔 정중앙을 노려봐!",
+      success,
     );
     document.querySelector("#clawStatus").textContent = success
       ? `${caught.name} 획득! 장난감·츄르는 보관함에 들어갔어.`
-      : "놓쳤다! 정중앙을 잡으면 확정 성공이야.";
+      : "fail.. 아깝다… 집게가 닿는 순간 중심을 정확히 맞춰줘.";
     phase = "done";
   }
   function frame(now) {
@@ -100,7 +101,7 @@ function renderClaw() {
       for (let i = 0; i < prizes.length; i++) {
         const z = prizes[i];
         z.dir ??= i % 2 ? 1 : -1;
-        z.x += z.dir * (170 + i * 9) * dt;
+        z.x += z.dir * (210 + i * 11) * dt;
         if (z.x < 40) {
           z.x = 40;
           z.dir = 1;
@@ -125,8 +126,22 @@ function renderClaw() {
         const nearest = prizes.reduce((a, b) =>
           Math.abs(a.x - x) < Math.abs(b.x - x) ? a : b,
         );
-        success = Math.abs(nearest.x - x) <= 17;
+        success = Math.abs(nearest.x - x) <= 6;
         caught = success ? nearest : null;
+        const feedback = document.querySelector("#clawFeedback");
+        feedback.className =
+          "claw-feedback " + (success ? "catch-success" : "catch-fail");
+        feedback.innerHTML = success
+          ? `<strong>CATCH!</strong><span>${caught.name} 제대로 잡았다!</span>${Array.from({ length: 12 }, (_, i) => `<i style="--i:${i}">✦</i>`).join("")}`
+          : "<strong>fail..</strong><span>집게 사이로 빠져나갔어…</span>";
+        feedback.hidden = false;
+        document
+          .querySelector(".claw-machine")
+          .classList.toggle("is-failed", !success);
+        document.querySelector("#clawStatus").textContent = success
+          ? "CATCH! 놓치지 않고 끌어올리는 중!"
+          : "fail.. 조금만 더 정확히 중심을 노려봐…";
+        playEffect(success ? "victory" : "sad");
         phase = "up";
       }
     } else if (phase === "up") {
@@ -173,10 +188,10 @@ function renderClaw() {
     ctx.fillRect(x - 9, y, 18, 12);
     ctx.beginPath();
     ctx.moveTo(x - 6, y + 10);
-    ctx.lineTo(x - 17, y + 28);
+    ctx.lineTo(x - (caught ? 8 : 17), y + 28);
     ctx.lineTo(x - 8, y + 34);
     ctx.moveTo(x + 6, y + 10);
-    ctx.lineTo(x + 17, y + 28);
+    ctx.lineTo(x + (caught ? 8 : 17), y + 28);
     ctx.lineTo(x + 8, y + 34);
     ctx.strokeStyle = "#ffe0a3";
     ctx.lineWidth = 4;
