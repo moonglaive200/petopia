@@ -180,10 +180,40 @@ class CatSurvival {
       this.loot.push({
         x: e.x,
         y: e.y,
-        kind: ["coin", "magnet", "chest"][Math.floor(this.random() * 3)],
+        kind: ["coin", "magnet", "chest", "bomb"][
+          Math.floor(this.random() * 4)
+        ],
       });
     if (!this.discovered) this.discovered = [];
     if (!this.discovered.includes(e.type)) this.discovered.push(e.type);
+  }
+  explode(x, y) {
+    const radius = 260;
+    let killed = 0;
+    for (const enemy of [...this.enemies]) {
+      if (enemy.hp <= 0 || Math.hypot(enemy.x - x, enemy.y - y) > radius)
+        continue;
+      this.damage(enemy, enemy.boss ? enemy.maxHP * 0.2 : Math.ceil(enemy.hp));
+      if (enemy.hp === 0) killed++;
+    }
+    this.effects.push({
+      kind: "explosion",
+      x,
+      y,
+      r: radius,
+      life: 0.65,
+      max: 0.65,
+      color: "#ffd76b",
+    });
+    this.shake = 12;
+    this.numbers.push({
+      x,
+      y: y - 70,
+      text: "치즈폭탄!",
+      life: 1.3,
+      cheese: true,
+    });
+    this.event = `치즈폭탄! 주변 몬스터 ${killed}마리 처치 · 보스에게도 큰 피해`;
   }
   hit(amount) {
     const p = this.player;
@@ -465,7 +495,8 @@ class CatSurvival {
           r: 65,
           life: 0.5,
           max: 0.5,
-          color: "#9ee1a2",
+          color: "#ff3030",
+          hostile: true,
         });
       }
     }
@@ -552,7 +583,7 @@ class CatSurvival {
         e.x += e.charge.dx * dt * 440;
         e.y += e.charge.dy * dt * 440;
         if (e.charge.life <= 0) e.charge = null;
-      } else if (e.windup > 0) {
+      } else if (e.windup > 0 || e.charge) {
         e.windup -= dt;
         if (e.windup <= 0 && dist < (e.boss ? 65 : 35)) this.hit(e.attack);
       } else if (dist > 25) {
@@ -676,6 +707,7 @@ class CatSurvival {
             g.y = p.y;
           }
         else if (item.kind === "coin") this.bonusGold += 15;
+        else if (item.kind === "bomb") this.explode(p.x, p.y);
         else {
           this.gainXP(8);
           p.hp = Math.min(p.maxHP, p.hp + 10);
@@ -825,7 +857,7 @@ function startSurvival(map = 0) {
       ctx.fillStyle = "#d47c65";
       ctx.fillRect(-20, -29, (40 * e.hp) / e.maxHP, 4);
     }
-    if (e.windup > 0) {
+    if (e.windup > 0 || e.charge) {
       ctx.strokeStyle = "#e2634b";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -919,13 +951,13 @@ function startSurvival(map = 0) {
       ctx.fillStyle = z.friendly
         ? "#d9a3c355"
         : z.warn > 0
-          ? "#e9a15055"
-          : "#e964555f";
+          ? "#ff202055"
+          : "#ff10106f";
       ctx.strokeStyle = z.friendly
         ? "#efbfdd"
         : z.warn > 0
-          ? "#ffe2a0"
-          : "#ff6c60";
+          ? "#ff3030"
+          : "#ff2020";
       ctx.lineWidth = 3;
       if (z.kind === "charge") {
         ctx.beginPath();
@@ -959,12 +991,12 @@ function startSurvival(map = 0) {
     for (const g of arena.gems) {
       const x = g.x - camX,
         y = g.y - camY;
-      drawItem(ctx, x, y, 20, g.icon || 0, arena.time);
+      drawItem(ctx, x, y, 30, g.icon || 0, arena.time);
     }
     for (const l of arena.loot) {
       const x = l.x - camX,
         y = l.y - camY;
-      drawItem(ctx, x, y, 32, l.kind, arena.time);
+      drawItem(ctx, x, y, 44, l.kind, arena.time);
     }
     arena.enemies.forEach((e) => drawEnemy(e, camX, camY));
     const px = p.x - camX,
@@ -1007,7 +1039,7 @@ function startSurvival(map = 0) {
       const x = b.x - camX,
         y = b.y - camY;
       if (b.delay > 0) {
-        ctx.strokeStyle = "#ecb26e99";
+        ctx.strokeStyle = "#ff2020cc";
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x + b.dx * 40, y + b.dy * 40);
@@ -1017,7 +1049,7 @@ function startSurvival(map = 0) {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(Math.atan2(b.dy, b.dx));
-      ctx.fillStyle = b.friendly ? "#a5e4e4" : "#edacb2";
+      ctx.fillStyle = b.friendly ? "#a5e4e4" : "#ff2020";
       ctx.shadowColor = ctx.fillStyle;
       ctx.shadowBlur = 12;
       ctx.fillRect(-32, -2, 26, 4);
@@ -1047,7 +1079,24 @@ function startSurvival(map = 0) {
       ctx.lineWidth = e.kind === "slash" ? 7 : 3;
       ctx.shadowColor = e.color;
       ctx.shadowBlur = 18;
-      if (e.kind === "spark") {
+      if (e.kind === "explosion") {
+        const q = 1 - e.life / e.max;
+        ctx.fillStyle = "#ffab3033";
+        ctx.beginPath();
+        ctx.arc(x, y, e.r * q, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#ffe795";
+        ctx.lineWidth = 12 * (1 - q) + 2;
+        ctx.beginPath();
+        ctx.arc(x, y, e.r * q, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let i = 0; i < 16; i++) {
+          const a = (i * Math.PI) / 8,
+            d = e.r * q;
+          ctx.fillStyle = i % 2 ? "#fff0a1" : "#ff9940";
+          ctx.fillRect(x + Math.cos(a) * d - 4, y + Math.sin(a) * d - 4, 8, 8);
+        }
+      } else if (e.kind === "spark") {
         for (let i = 0; i < 6; i++) {
           const a = (i * Math.PI) / 3,
             d = (1 - e.life / e.max) * e.r;
@@ -1094,7 +1143,7 @@ function startSurvival(map = 0) {
         }
       } else {
         if (e.kind === "ring") {
-          drawItem(ctx, x, y, 30, 2, arena.time);
+          if (!e.hostile) drawItem(ctx, x, y, 30, 2, arena.time);
           for (let n = 0; n < 2; n++) {
             ctx.lineWidth = 2 + n * 3;
             ctx.globalAlpha *= 0.8;
@@ -1125,7 +1174,16 @@ function startSurvival(map = 0) {
     ctx.font = "bold 16px Neo,monospace";
     for (const n of arena.numbers) {
       ctx.globalAlpha = Math.min(1, n.life * 3);
-      ctx.fillStyle = n.hurt ? "#ffc7bb" : n.crit ? "#ffe18e" : "#fff6d5";
+      ctx.font = n.cheese
+        ? "bold 25px Neo,monospace"
+        : "bold 16px Neo,monospace";
+      ctx.fillStyle = n.cheese
+        ? "#ffe063"
+        : n.hurt
+          ? "#ffc7bb"
+          : n.crit
+            ? "#ffe18e"
+            : "#fff6d5";
       ctx.strokeStyle = "#594137";
       ctx.lineWidth = 3;
       ctx.strokeText(n.text, n.x - camX, n.y - camY);
@@ -1397,6 +1455,44 @@ function drawItem(c, x, y, size, kind, t = 0, framed = true) {
     c.font = "bold 12px monospace";
     c.textAlign = "center";
     c.fillText("FISH", 0, 6);
+  } else if (kind === "bomb") {
+    // A thick triangular cheese wedge, with a golden rind and round holes.
+    c.lineWidth = 1.5;
+    c.strokeStyle = "#a96a1b";
+    c.fillStyle = "#e6a12d";
+    c.beginPath();
+    c.moveTo(-12, -9);
+    c.lineTo(-12, 15);
+    c.lineTo(12, 5);
+    c.lineTo(12, -2);
+    c.closePath();
+    c.fill();
+    c.stroke();
+    c.fillStyle = "#ffe477";
+    c.beginPath();
+    c.moveTo(-12, -9);
+    c.lineTo(12, -2);
+    c.lineTo(-12, 8);
+    c.closePath();
+    c.fill();
+    c.stroke();
+    c.strokeStyle = "#fff2ad";
+    c.beginPath();
+    c.moveTo(-11, -8);
+    c.lineTo(10, -2);
+    c.stroke();
+    c.fillStyle = "#cb8522";
+    for (const [hx, hy, r] of [
+      [-7, -4, 2.4],
+      [-6, 3, 1.8],
+      [2, -1, 1.7],
+      [-8, 11, 1.4],
+      [2, 7, 1.7],
+    ]) {
+      c.beginPath();
+      c.ellipse(hx, hy, r, r * 0.7, 0, 0, Math.PI * 2);
+      c.fill();
+    }
   } else {
     c.fillStyle = "#ffe07a";
     c.font = "bold 24px monospace";

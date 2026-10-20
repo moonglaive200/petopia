@@ -544,4 +544,41 @@ test("survival happiness threshold is enforced without spending failed entry res
   assert.equal(s.daily.dungeon, 1);
 });
 
+test("bomb pickup clears nearby regular enemies, damages bosses and preserves distant targets", () => {
+  const a = new CatSurvival(
+    { hp: 100, attack: 8, defense: 1 },
+    0,
+    1,
+    () => 0.5,
+  );
+  const make = (x, boss = false) => ({
+    x,
+    y: 900,
+    hp: boss ? 1000 : 50.4,
+    maxHP: boss ? 1000 : 50.4,
+    type: 0,
+    boss,
+    bossId: 1,
+    speed: 0,
+    pattern: 99,
+    contactCD: 99,
+    flash: 0,
+    windup: 0,
+    charge: null,
+  });
+  a.enemies = [make(1250), make(1400, true), make(1600)];
+  a.loot = [{ x: 1200, y: 900, kind: "bomb" }];
+  a.spawnClock = 99;
+  a.update(0.01, {});
+  assert.equal(a.kills, 1);
+  assert.equal(a.enemies.find((e) => e.boss).hp, 800);
+  assert.equal(a.enemies.find((e) => e.x > 1500).hp, 50.4);
+  assert.ok(a.effects.some((e) => e.kind === "explosion"));
+  assert.ok(a.numbers.some((n) => n.text === "치즈폭탄!"));
+  assert.equal(
+    a.loot.some((e) => e.kind === "bomb"),
+    false,
+  );
+  assert.ok(a.event.includes("폭탄"));
+});
 console.log(`PASS ${count} v4 scenario groups`);

@@ -4006,3 +4006,72 @@ dialog {
     align-self: flex-end;
   }
 }
+
+/* Keep every augment reachable, including narrow and short screens. */
+#survivalOverlay {
+  justify-content: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  gap: 10px;
+  scrollbar-gutter: stable;
+}
+#survivalOverlay > h2,
+#survivalOverlay > p {
+  flex-shrink: 0;
+  margin: 0;
+}
+#survivalOverlay .upgrade-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.action-wrap #survivalOverlay .upgrade-choices .btn {
+  min-height: 0 !important;
+  padding: 12px !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#survivalOverlay .upgrade-choices strong {
+  font-size: 16px !important;
+  line-height: 1.45;
+}
+#survivalOverlay .upgrade-choices small {
+  font-size: 13px !important;
+  line-height: 1.5;
+}
+#survivalOverlay .augment-icon {
+  font-size: 30px;
+}
+#survivalOverlay .augment-icon .item-icon {
+  width: 36px;
+  height: 36px;
+}
+@media (max-width: 650px) {
+  .action-wrap:has(#survivalOverlay:not([hidden])) {
+    min-height: min(440px, 75svh);
+  }
+  #survivalOverlay .upgrade-choices {
+    grid-template-columns: 1fr;
+  }
+  #survivalOverlay .upgrade-choices .btn {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 8px;
+    text-align: left;
+  }
+  #survivalOverlay .augment-icon {
+    grid-row: 1/4;
+    align-self: center;
+  }
+  #survivalOverlay .upgrade-choices em {
+    margin: 0;
+  }
+  #survivalOverlay .upgrade-choices strong {
+    font-size: 14px !important;
+  }
+  #survivalOverlay .upgrade-choices small {
+    font-size: 12px !important;
+  }
+}
