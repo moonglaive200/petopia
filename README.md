@@ -1,37 +1,67 @@
-# Petopia
+# Petopia · 춘배와 집사의 이상한 하루
 
-설치 없이 동작하는 HTML / CSS / JavaScript 도트 브라우저 게임 프로토타입.
+A static HTML / CSS / JavaScript pixel browser game. No npm install, backend, login, or paid assets required.
 
-## 실행
+## Run
 
 ```sh
 cd /workspace/petopia
 python -m http.server 8000
 ```
 
-`index.html`을 브라우저에서 열어도 플레이할 수 있다. 저장은 브라우저의 localStorage를 사용하므로 같은 주소와 브라우저에서 이어서 플레이한다. 슬롯 3개는 서로 독립적이다. 기존 캐릭터 선택만 저장된 슬롯도 새 상태로 자동 확장한다.
+Use a browser on the server address, or publish the repository's `main` branch root with GitHub Pages. A static web server is recommended for consistent iframe/audio behavior. Saves belong to the current browser and origin. Settings includes JSON save export/import and lobby background selection.
 
-## 플레이
+## Main loop
 
-로비 → 시작하기 → 슬롯 → 춘배 선택 → 춘배의 방. 오레오는 개발 중이다.
+Choose one of three independent slots, then 춘배. 오레오 is locked as under development. 춘배 appears above nine activity menus. The information bar shows level, attack/defense, happiness, fame, gold and diamonds.
 
-- **던전**: 10단계를 순서대로 해금. 기력 10 소모, 매 입장 체력 완충. 공격은 직접 버튼을 눌러 진행하고 매 행동 후 적이 한 번 반격한다. 강타는 공격력 2배, 이후 3행동 재사용 대기. 붕대는 18 G로 체력 45 회복하지만 반격이 있다. 처치한 행동에는 반격이 없다. 패배 시 기존 골드와 XP는 보존된다. 새로고침·철수 시 진행 중 전투는 포기하며 입장 기력과 사용한 붕대 비용은 반환되지 않는다.
-- **성장**: 최초 보상 22 G / 24 XP부터 단계별 증가. 첫 승리는 골드와 XP 모두 2배, 이후 반복 사냥 가능. 레벨당 최대 체력 +8, 공격 +2, 3레벨마다 방어 +1. 필요 XP는 `35 + 레벨 × 15`.
-- **장비**: 무기 3종(기본 / 180 G / 650 G), 방어구 3종(기본 / 150 G / 550 G). 각 부위 강화 최대 +3, 비용은 60 / 120 / 220 G. 강화 확정 성공, 장비 교체 시 강화 유지. 무기 강화당 공격 +2, 방어구 강화당 방어 +1.
-- **산책**: 전투 없이 기력 5로 8~16 G + 8 XP, 15초 대기.
-- **일하기**: 기력 10으로 45 G, 30초 대기. **펫 방송**: 기력 5로 20~35 G + 팔로워 5, 45초 대기.
-- **펫스타**: 기력 3으로 팔로워 20~35, 30초 대기. 팔로워 100 / 1,000 / 10,000명에서 골드 활동 보상 +5 / +10 / +15%. 대출에는 보너스가 붙지 않는다.
-- **펫은행**: 무이자 한도 200 G, 50 G씩 대출·상환.
-- 기력은 최대 100, 1분에 5씩 회복하며 화면 이동·활동 시 경과 시간을 반영한다. 초기 자금 80 G.
+**Sleep** advances the in-game day; real-world time does not advance days. A new day restores energy to 100, lowers happiness by 8, pays jobs and assets, and settles due loans. Daily limits: Petstar 1 post, Live once every 3 days, walks 2 outings, dungeons 5 entries (normal and boss combined). Arcade/casino entry uses one outing; several games can be played during that visit. Activity restrictions and all results are saved immediately.
 
-수치는 `engine.js`에 모여 있다. 현재 값은 초기 프로토타입이며, 실제 플레이 시간과 체감 난이도를 보면서 조정할 수 있다. 배경·캐릭터·몬스터는 외부 이미지 없이 Canvas로 그린 임시 도트다.
+### Combat and health
 
-## 검증
+- 10 normal dungeon tiers, unlocked sequentially. Three enemies per run with individual health bars. First-clear gold/XP rewards doubled.
+- WASD / arrows: move; J / click: attack; Space: dodge; P: pause. Touch controls are included. Tab blur automatically pauses combat.
+- Boss: **조커의남자**, 650 HP, recommended level 6+, card fan / telegraphed charge / roulette hazard circles. Stronger patterns below half health. Defeating it unlocks the casino.
+- Death or happiness reaching 0 requires **펫병원**. Treatment costs `60 + level × 35 G` and restores happiness to at least 55 and energy to at least 50. Insufficient funds trigger a five-day emergency loan even above the ordinary credit limit.
+- Refreshing in an unfinished dungeon sends the pet to hospital; manually retreating consumes the entry and lowers happiness by 5. Gold and XP already owned are preserved.
+
+### Petmart and collection
+
+- **펫대장간**: 3 weapons and 3 armors; permanent slot upgrades +3 max, costs 60/120/220 G. Upgrade bonuses survive equipment switching. Toy shelf included.
+- **츄르코너**: tuna, salmon, premium churu, with different prices/happiness gains. No generic snack duplicates.
+- **펫오토**: cheap car (drive unlock), luxury car (extra drive gold/happiness), aircraft (extra drive diamond; a car is still required to unlock driving).
+- **장난감**: collected toys can be used twice a day for happiness; churu inventory can be fed freely when the pet is healthy.
+
+### Walks and minigames
+
+- **Park**: 50% happiness +10/diamond +1; 20% meet a crush/diamond +3/happiness +5; 10% rain/happiness −12; 5% toy; 5% churu; 10% petting/both follower counts +10% (minimum 1). Duplicate toy finds become one diamond.
+- **방앗간**: neon arcade. Claw machine (20 G/energy 5, exact-center catch guaranteed), 4-key rhythm game (15 G/energy 5), and the supplied cat-adapted HEX FINALE (15 G/energy 5). Claw rewards diamonds, toys or churu; rhythm/HEX diamonds depend on performance.
+- **Drive**: car required; base gold, happiness and diamonds, improved by vehicles.
+- **Casino**: boss unlock required. Gold only. Roulette has 15 red / 15 black / 1 green; total payout 2x/2x/30x. Slots have five equally likely symbols: 3 matches 10x, 2 matches return the stake, otherwise 0 (88% expected return). Stakes 10–500 G, payouts include the stake. Casino does not award diamonds.
+- Diamonds are earned only through walks or minigames. They buy premium churu, special toys and vehicles; they cannot be borrowed or traded in the financial markets.
+
+### Social, work and bank
+
+- **Petstar**: daily topic, trending tag, possession-gated themes, persistent feed and comments. Previous Live highlights give a small boost.
+- **Pet Live**: topic choice, 3 interactive incidents, viewers/donations, saved highlights, sponsorships at 300 Live followers. Direct follower gains cross over to the other service at 20%, rounded down, without recursive crossover.
+- Combined fame adds 5%/10%/15% to activity gold at 100/1,000/10,000 followers.
+- **Work**: construction, office, churu lab. Direct jobs lock other activities until sleep and pay modest daily wages. Expensive employees work independently, one per job.
+- **Bank → loans**: limit `200 + (level−1) × 150 G`, due in five days, 10% interest, interest-free early repayment. Maturity settles automatically even into a negative gold balance; no bankruptcy/game-over. Emergency medical loans share the loan ledger.
+- **Bank → spending**: ten matching stock/company names; 3 coins; 3 buildings; company acquisitions. Daily deterministic quotes and a 4% sale fee. Acquired buildings/companies pay passive income each new day.
+- **Bank → housing**: default room + 6 homes, from cardboard studio to space penthouse. Current home changes the room background and work/employee perks. Previously purchased homes can be reselected; effects do not stack.
+
+## Assets and limits
+
+See [ASSETS.md](ASSETS.md) and `licenses/` for audio/font provenance. All distributed assets load locally. The chat's reference background image still needs its actual PNG/JPG file to become the shared default; Settings can apply it locally now.
+
+This is a playable single-player prototype; saving uses localStorage, not a server economy or anti-cheat system. Numeric balance is centralized in `engine.js` and can be tuned after playtesting. Existing v1 slots migrate automatically; old debt becomes a five-day loan.
+
+## Validation
 
 ```sh
 node tests/engine.test.cjs
-# 개발 서버 실행 후, Python Playwright와 Chromium이 있는 환경에서
+# With the web server running and Python Playwright + Chromium installed:
 python tests/browser_smoke.py
 ```
 
-브라우저 테스트는 별도 임시 브라우저 프로필을 사용한다. 기존 사용자 저장에는 영향을 주지 않는다. 테스트는 저장 호환성, 10단계 전투, 보상·패배, 해금, 장비, 돈 활동, 슬롯 분리, 새로고침 후 이어하기, 모바일 레이아웃을 확인한다.
+The engine suite exercises migration, day limits, jobs, debt/negative balances, medical loans, all park outcomes, unlocks, investments, expected slot payouts, roulette odds, dodge/movement, all ten combat tiers, and a recommended-level boss clear. Browser checks exercise real navigation, saves, daily limits, live events, purchases, investments, medical recovery, each minigame, mobile overflow, combat controls and pause/reload recovery. Tests use an isolated browser profile and do not alter player saves.
