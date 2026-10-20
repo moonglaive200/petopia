@@ -826,6 +826,7 @@ function startSurvival(map = 0) {
     renderDungeons,
   );
   activeActivity = true;
+  const stageMusic = map === 0 ? playMedia("stage-one", 0.28, true) : null;
   const canvas = document.getElementById("survivalCanvas"),
     ctx = canvas.getContext("2d"),
     overlay = document.getElementById("survivalOverlay"),
@@ -840,6 +841,7 @@ function startSurvival(map = 0) {
   function finish(retreat = false) {
     if (settled) return;
     settled = true;
+    stageMusic?.stop();
     const result = E.settleSurvival(s, { ...arena.snapshot(), retreat });
     save();
     activeActivity = false;
@@ -1434,7 +1436,11 @@ function startSurvival(map = 0) {
     });
     draw();
     renderOverlay();
-    if (!arena.paused && !arena.choice && !settled)
+    if (stageMusic && !settled) {
+      if (arena.paused || arena.choice) {
+        if (stageMusic.wanted) stageMusic.pause();
+      } else if (!stageMusic.wanted) stageMusic.resume();
+    } else if (!settled && !arena.paused && !arena.choice)
       playCombatAmbience(arena.time);
     for (const event of [...new Set(arena.soundEvents.splice(0))]) {
       playEffect(event);
@@ -1457,6 +1463,7 @@ function startSurvival(map = 0) {
   raf = requestAnimationFrame(frame);
   setCleanup(() => {
     cancelAnimationFrame(raf);
+    stageMusic?.stop();
     window.removeEventListener("keydown", down);
     window.removeEventListener("keyup", up);
     window.removeEventListener("blur", blur);

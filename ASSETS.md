@@ -53,3 +53,21 @@ All game assets are served locally; normal play does not request third-party CDN
 - Four cat-voice renderings: happy/surprised/complaining use playback-rate and timing variations of the existing MIT cat clip; purring is synthesized. These are not four additional field recordings. No new external cat audio was added.
 - Weapon, footstep, pickup, dodge, warning and ambient battle sounds are synthesized locally through one reusable Web Audio context. Muting stops the shutter, cat voices and context together; rate limiting prevents repeated hit/voice spam.
 - Petstar celebrity names are fictional offline like events; they do not represent real interactions or endorsements.
+
+## v0.6 user-supplied audio and sprite framing
+
+The following files are copied unchanged from this conversation's uploads, and are user-supplied assets (no external license claim):
+
+| Local asset                  | Uploaded name                 | Use                                           |
+| ---------------------------- | ----------------------------- | --------------------------------------------- |
+| `assets/rain.mp3`            | 비.mp3                        | Rainy forest intro loop                       |
+| `assets/demon.mp3`           | 마왕소리.mp3                  | First demon appearance                        |
+| `assets/memory.mp3`          | 기억잃는소리.mp3              | Memory-erasing curse                          |
+| `assets/flight.mp3`          | 날아가는소리.mp3              | Cats scattered by final strike                |
+| `assets/enhance-success.mp3` | 강화성공.mp3                  | Successful enhancement only                   |
+| `assets/enhance-break.mp3`   | 강화파괴.mp3                  | Gear destruction only                         |
+| `assets/stage-one.mp3`       | 1스테이지.mp3                 | Survival stage-one background music           |
+| `assets/weapon-swing.mp3`    | 냥서바이벌 기본휘두루기.mp3   | Basic claw attack                             |
+| `assets/purchase.mp3`        | 동전소리*구매하다*팔다\_1.mp3 | Successful paid purchases and stock/coin buys |
+
+Other weapon effects remain synthesized, with their gain increased independently of UI/other effects. Native audio loops stop on scene cleanup and respect mute; stage music pauses during pause/upgrade selection. Default attack samples have bounded overlap. Per-direction atlas bounds fix uneven artwork spacing without editing the original image. Only the cheese row of the existing companion art is used. Slot crown jackpot and treat icons are locally authored inline SVG.

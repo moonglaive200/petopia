@@ -33,8 +33,8 @@ const GUIDE_TIPS = [
   "던전에서 쓰러져도 생존 시간과 처치 수에 따른 보상은 받을 수 있어.",
   "무기 5단계와 짝인 능력 3단계를 모으면 무기가 진화해. 던전의 진화 조합을 확인해 봐!",
   "흡혈 송곳니는 실제 준 피해의 10%씩 체력을 회복해. 3단계면 30%!",
-  "공원·방앗간·드라이브는 합쳐 하루 1번, 기력 25야. 방앗간 안에서는 추가 기력 없이 여러 판 즐길 수 있어.",
-  "공원산책에서 썸냥이를 만날 확률은 3%! 고양이 축제 날에는 3.9%야.",
+  "공원·방앗간·드라이브는 각각 하루 1번, 각각 기력 25야. 방앗간 안에서는 추가 기력 없이 여러 판 즐길 수 있어.",
+  "던전 클리어·산책·근무 완료·펫스타·Live 완료 때 치즈냥이 만남 확률은 각각 5%!",
   "드라이브는 자동차와 썸냥이가 모두 있어야 해금돼. 함께 달리면 호감도도 조금 올라!",
   "직접 일하기는 기력 50을 쓰고 다음 날 일당과 근무 경력을 받아. 다른 활동도 가능해.",
   "공사장 주인 10단계면 회사, 회사 주인 10단계면 연구소가 열려.",
@@ -52,10 +52,13 @@ const GUIDE_TIPS = [
   "병원 치료는 행복도를 30으로 회복해. 돈이 부족하면 긴급 대출이 가능하지만 기력은 안 차!",
   "한 계절은 28일, 1일은 일요일이야. 달력에 표시된 겨울 27일은 춘배 생일!",
 ];
-let guideIndex = -1;
 function guidePanel() {
-  guideIndex = (guideIndex + 1) % GUIDE_TIPS.length;
-  return `<div class="game-notice guide-panel"><p id="guideText" aria-live="polite">가이드: ${GUIDE_TIPS[guideIndex]}</p><button class="text-button" id="nextGuide" aria-label="다음 가이드 보기">다음 팁 <span id="guideCount">${guideIndex + 1}/${GUIDE_TIPS.length}</span> →</button></div>`;
+  const s = player();
+  if (s.guideDay !== s.day) {
+    s.guideDay = s.day;
+    s.guideTip = Math.floor(Math.random() * GUIDE_TIPS.length);
+  }
+  return `<div class="game-notice guide-panel"><p id="guideText">가이드: ${GUIDE_TIPS[s.guideTip] || GUIDE_TIPS[0]}</p><small>오늘의 랜덤 가이드 · 다음 날 새로 뽑아</small></div>`;
 }
 function statusText(s) {
   return s.hospital
@@ -70,13 +73,14 @@ function gameShell(content, back = renderHome) {
   cleanupView();
   const s = player();
   document.body.dataset.screen = "game";
-  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${back === showSlots ? dailyEventPanel(s) : ""}${content}<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="inventory">▤ 인벤토리</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton" ${!E.canSleep(s) ? "disabled" : ""} title="주인 기력 25 이하에서 잠들 수 있어">☾ 잠자기 · 기력 25 이하</button><button data-utility="settings">⚙ 설정</button></nav><section class="activity-journal" aria-label="냥생 기록"><h2>냥생 기록</h2><div class="daily-log" id="activityLog"></div></section></section>`;
+  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${back === showSlots ? dailyEventPanel(s) : ""}${content}${back === showSlots ? `<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="inventory">▤ 인벤토리</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton" ${!E.canSleep(s) ? "disabled" : ""} title="주인 기력 25 이하에서 잠들 수 있어">☾ 잠자기 · 기력 25 이하</button><button data-utility="settings">⚙ 설정</button></nav>` : ""}<section class="activity-journal" aria-label="냥생 기록"><h2>냥생 기록</h2><div class="daily-log" id="activityLog"></div></section></section>`;
   document.querySelector(".save-label").textContent =
     `SLOT ${selectedSlot + 1}${s.ownerName ? " · " + s.ownerName + " 집사" : ""}`;
   document.querySelector("#gameBack").onclick = () => {
     if (leaveGame()) back();
   };
-  document.querySelector("#dayButton").onclick = sleep;
+  const dayButton = document.querySelector("#dayButton");
+  if (dayButton) dayButton.onclick = sleep;
   const actions = {
     mart: renderMart,
     bank: renderBank,
@@ -91,6 +95,7 @@ function gameShell(content, back = renderHome) {
   document.querySelector("#calendarButton").onclick = renderCalendar;
   refreshActivityLog();
   save();
+  schedulePartnerMeeting();
 }
 function bind(key, fn) {
   document
@@ -137,11 +142,11 @@ function renderHome() {
     st = E.stats(s),
     married = s.romance?.stage >= 2;
   gameShell(
-    `<div class="home-title"><div>${title("CHUNBAE’S LITTLE WORLD", "춘배의 방")}</div><span class="date-chip">${E.houses[s.house].name}</span></div><div class="pet-stage house-${s.house} ${s.weather === "rain" ? "raining" : ""}">${s.house === 0 ? `<div class="street-lamp"></div><div class="street-bag">▣</div><div class="street-paper">오늘의 냥보</div>` : ""}<div class="rain-layer"></div><div class="window-pixel"><span></span></div><div class="wall-picture">${["☁", "▣", "☂", "☀", "≈", "♛", "☾", "✦"][s.house]}</div><div class="speech">${s.hospital ? "집사야… 병원 좀…" : married ? "우리 둘이 같이 살아요. 집사는 출근해요." : "집사 이름으로 된 통장, 내가 지킨다."}</div><div class="home-cats">${spriteMarkup("chunbae", s.hospital ? "sad" : s.happiness > 80 ? "happy" : "normal", "breathing")}${married ? spriteMarkup(s.romance.kind, "happy", "breathing partner-at-home") : ""}</div><div class="floor-rug"></div><span class="stage-label">${married ? "춘배와 " + E.partners[s.romance.kind].name : "춘배 · 오늘도 함께"}</span></div><div class="status-strip stats-six"><div><small>레벨</small><strong>LV.${s.level}</strong><progress value="${s.xp}" max="${E.xpNeeded(s.level)}"></progress><span>${s.xp}/${E.xpNeeded(s.level)} XP</span></div><div><small>공격 / 방어</small><strong>${st.attack} / ${st.defense}</strong><span>체력 ${st.hp}</span></div><div><small>행복도</small><strong>${s.happiness}/100</strong><progress value="${s.happiness}" max="100"></progress><span class="happiness-bonus-note">수입 보너스 · 0~69: 없음<br>70~99: +20% · 100: +50%</span></div><div><small>유명세</small><strong>${money(s.followers + s.liveFollowers)}</strong><span>펫스타 + Live 팔로워</span></div><div><small>보유재화</small><strong class="gold-label">🪙 골드 ${money(s.gold)} G</strong><span class="diamond-label">💎 다이아 ${s.diamonds}개</span></div><div><small>수입 보너스</small><strong>+${(E.bonus(s) * 100).toFixed(1)}%</strong><span>유명세 × 행복도 × 연애 × 집<br>주인 일당 +${((1 + E.bonus(s)) * (1 + E.vehicleBonus(s)) * 100 - 100).toFixed(1)}%<br>탈것 추가 곱연산</span></div></div><div class="daily-strip"><span>던전 남음 ${1 - s.daily.dungeon}/1</span><span>힐링 남음 ${1 - s.daily.walk}/1</span><span>펫스타 남음 ${1 - s.daily.star}/1${s.daily.star ? " · 오늘 완료" : ""}</span><span>Live ${Math.max(0, 3 - s.day + s.liveDay) ? `${3 - s.day + s.liveDay}일 후` : "가능"}</span></div><div class="section-heading"><h2>오늘의 냥생</h2><span>당일 기력 회복 불가</span></div><nav class="activity-grid eight-activities">${[
+    `<div class="home-title"><div>${title("CHUNBAE’S LITTLE WORLD", "춘배의 방")}</div><span class="date-chip">${E.houses[s.house].name}</span></div><div class="pet-stage house-${s.house} ${s.weather === "rain" ? "raining" : ""}">${s.house === 0 ? `<div class="street-lamp"></div><div class="street-bag">▣</div><div class="street-paper">오늘의 냥보</div>` : ""}<div class="rain-layer"></div><div class="window-pixel"><span></span></div><div class="wall-picture">${["☁", "▣", "☂", "☀", "≈", "♛", "☾", "✦"][s.house]}</div><div class="speech">${s.hospital ? "집사야… 병원 좀…" : married ? "우리 둘이 같이 살아요. 집사는 출근해요." : "집사 이름으로 된 통장, 내가 지킨다."}</div><div class="home-cats">${spriteMarkup("chunbae", s.hospital ? "sad" : s.happiness > 80 ? "happy" : "normal", "breathing")}${married ? spriteMarkup(s.romance.kind, "happy", "breathing partner-at-home") : ""}</div><div class="floor-rug"></div><span class="stage-label">${married ? "춘배와 " + escapeLog(E.partnerName(s)) : "춘배 · 오늘도 함께"}</span></div><div class="status-strip stats-six"><div><small>레벨</small><strong>LV.${s.level}</strong><progress value="${s.xp}" max="${E.xpNeeded(s.level)}"></progress><span>${s.xp}/${E.xpNeeded(s.level)} XP</span></div><div><small>공격 / 방어</small><strong>${st.attack} / ${st.defense}</strong><span>체력 ${st.hp}</span></div><div><small>행복도</small><strong>${s.happiness}/100</strong><progress value="${s.happiness}" max="100"></progress><span class="happiness-bonus-note">수입 보너스 · 0~69: 없음<br>70~99: +20% · 100: +50%</span></div><div><small>유명세</small><strong>${money(s.followers + s.liveFollowers)}</strong><span>펫스타 + Live 팔로워</span></div><div><small>보유재화</small><strong class="gold-label">🪙 골드 ${money(s.gold)} G</strong><span class="diamond-label">💎 다이아 ${s.diamonds}개</span></div><div><small>수입 보너스</small><strong>+${(E.bonus(s) * 100).toFixed(1)}%</strong><span>유명세 × 행복도 × 연애 × 집<br>주인 일당 +${((1 + E.bonus(s)) * (1 + E.vehicleBonus(s)) * 100 - 100).toFixed(1)}%<br>탈것 추가 곱연산</span></div></div><div class="daily-strip"><span>던전 남음 ${1 - s.daily.dungeon}/1</span><span>힐링 남음 ${4 - s.daily.walk - s.daily.drive - s.daily.arcade - s.daily.nap}/4 · 낮잠 주말</span><span>펫스타 남음 ${1 - s.daily.star}/1${s.daily.star ? " · 오늘 완료" : ""}</span><span>Live ${Math.max(0, 3 - s.day + s.liveDay) ? `${3 - s.day + s.liveDay}일 후` : "가능"}</span></div><div class="section-heading"><h2>오늘의 냥생</h2><span>당일 기력 회복 불가</span></div><nav class="activity-grid eight-activities">${[
       ["dungeon", "⚔", "냥서바이벌", "하루 1회 · 기력 −50 · 행복도 20 이상"],
-      ["walk", "♧", "힐링하기", "바깥 활동 하루 1회 · 주말 낮잠 무료"],
-      ["work", "▣", "주인 노동시키기", "근무 중에도 자유 활동 · 기력 −50"],
       ["romance", "♡", "연애", "메뉴 입장 무료 · 행동마다 기력 −25"],
+      ["walk", "♧", "힐링하기", "각각 하루 1회 · 주말 낮잠 무료"],
+      ["work", "▣", "주인 노동시키기", "근무 중에도 자유 활동 · 기력 −50"],
       [
         "influencer",
         "✦",
@@ -154,7 +159,7 @@ function renderHome() {
     ]
       .map(
         ([id, icon, name, desc]) =>
-          `<button class="activity ${id === "dungeon" ? "adventure" : ""}" data-menu="${id}"><span class="activity-icon">${icon}</span><span><strong>${name}</strong><small>${desc}</small></span><span class="arrow">↗</span></button>`,
+          `<button class="activity ${["dungeon", "romance"].includes(id) ? "adventure" : ""}" data-menu="${id}"><span class="activity-icon">${icon}</span><span><strong>${name}</strong><small>${desc}</small></span><span class="arrow">↗</span></button>`,
       )
       .join("")}</nav>${guidePanel()}`,
     showSlots,
@@ -178,13 +183,6 @@ function renderHome() {
       renderHome();
     } else notice("금화 또는 주인 기력이 부족해.");
   });
-  document.querySelector("#nextGuide").onclick = () => {
-    guideIndex = (guideIndex + 1) % GUIDE_TIPS.length;
-    document.querySelector("#guideText").textContent =
-      "가이드: " + GUIDE_TIPS[guideIndex];
-    document.querySelector("#guideCount").textContent =
-      `${guideIndex + 1}/${GUIDE_TIPS.length}`;
-  };
   const log = document.querySelector(".daily-log");
   log.scrollTop = log.scrollHeight;
 }
@@ -244,7 +242,7 @@ function renderWalk() {
     ],
   ];
   gameShell(
-    `${title("A LITTLE HEALING", "힐링하기", "바깥 활동 하루 1회 · 낮잠은 별도 하루 1회야.")}<p class="tip-banner">공원·방앗간·드라이브는 합쳐 하루 1회, 기력 −25.<br>비 오는 날 공원산책 불가 · 주말 낮잠은 기력 소모 없이 행복도 +30!</p><div class="destination-grid">${entries.map(([id, icon, name, desc, unlocked]) => `<button class="destination" data-dest="${id}" ${!unlocked || !E.canAct(s) || (id === "nap" ? s.daily.nap : s.daily.walk >= 1 || s.energy < 25) ? "disabled" : ""}><span>${icon}</span><h2>${name}</h2><p>${desc}</p><small>${id === "nap" ? (E.weekend(s) ? (s.daily.nap ? "오늘 낮잠 완료" : "주말 낮잠 가능") : "주말에만 가능") : unlocked ? "기력 −25" : "이용 불가"}</small></button>`).join("")}</div>`,
+    `${title("A LITTLE HEALING", "힐링하기", "4개 활동은 각각 하루 1회! 기력이 있으면 모두 할 수 있어.")}<p class="tip-banner">공원·방앗간·드라이브는 각각 하루 1회, 각각 기력 −25.<br>비 오는 날 공원산책 불가 · 주말 낮잠은 기력 소모 없이 행복도 +30!</p><div class="destination-grid">${entries.map(([id, icon, name, desc, unlocked]) => `<button class="destination" data-dest="${id}" ${!unlocked || !E.canAct(s) || (id === "nap" ? s.daily.nap : s.daily[id === "park" ? "walk" : id] >= 1 || s.energy < 25) ? "disabled" : ""}><span>${icon}</span><h2>${name}</h2><p>${desc}</p><small>${id === "nap" ? (E.weekend(s) ? (s.daily.nap ? "오늘 낮잠 완료" : "주말 낮잠 가능") : "주말에만 가능") : unlocked ? (s.daily[id === "park" ? "walk" : id] ? "오늘 완료 · 남음 0/1" : "남음 1/1 · 기력 −25") : "이용 불가"}</small></button>`).join("")}</div>`,
   );
   bind("dest", (id) => {
     if (id === "nap") {
@@ -324,7 +322,10 @@ function renderEnhance(type = "weapon") {
     if (!result) return;
     save();
     renderEnhance(type);
-    playEffect(result.outcome === "success" ? "victory" : "sad");
+    if (result.outcome !== "hold")
+      playEffect(
+        result.outcome === "success" ? "enhance-success" : "enhance-break",
+      );
     catVoice(result.outcome === "success" ? "happy" : "complain");
     showModal(
       result.outcome === "success"
@@ -384,7 +385,11 @@ function renderMart(tab = "forge", forge = "weapon") {
   bind("forge", (id) => renderMart("forge", id));
   bind("buy", (value, b) => {
     const [type, i] = value.split(":");
+    const beforeGold = s.gold,
+      beforeDiamonds = s.diamonds;
     if (E.purchase(s, type, Number(i))) {
+      if (s.gold < beforeGold || s.diamonds < beforeDiamonds)
+        playEffect("purchase");
       save();
       meow();
       renderMart(tab, forge);
@@ -415,7 +420,7 @@ function shopCard(type, item, i, s) {
             : type === "house"
               ? `수입 보너스 ×${(1 + item.work).toFixed(2)} (다른 보너스와 곱연산) · 기상 행복도 ${item.wake >= 0 ? "+" : ""}${item.wake} · 주인 수입 +${Math.round(item.work * 100)}% · 직원 +${Math.round(item.staff * 100)}%${item.discount ? ` · 고용 할인 ${item.discount * 100}%` : ""}`
               : item.text ||
-                `매일 +${money(item.income)} G (구매 가격의 ${type === "company" ? 1 : 2}%)${type === "company" ? " + 해당 주식 1주" : ""}`;
+                `매일 +${money(item.income)} G (구매 가격의 ${type === "company" ? 1 : 2}%)${type === "company" ? " + 회사가의 1% 상당 주식 (소수 둘째 자리까지)" : ""}`;
   const cost = ["weapon", "armor", "toy", "treat", "vehicle"].includes(type)
     ? E.shopPrice(s, item)
     : item.cost;
@@ -443,14 +448,14 @@ function renderWork() {
   const s = player(),
     h = E.houses[s.house];
   gameShell(
-    `${title("WORK HARD, NAP HARDER", "주인 노동시키기", "일하러 보내도 다른 활동은 계속할 수 있어. 일당·경력은 다음 날 정산!")}<p class="tip-banner">하루 1회 · 주인 기력 −50<br>집 보너스 ${Math.round(h.work * 100)}% · 탈것 ${Math.round(E.vehicleBonus(s) * 100)}% (최고 1개만) · 각 수입 보너스 곱연산 · 직원 고용 할인 ${h.discount * 100}%</p><div class="shop-grid">${E.jobs
+    `${title("WORK HARD, NAP HARDER", "주인 노동시키기", "일하러 보내도 다른 활동은 계속할 수 있어. 일당·경력은 다음 날 정산!")}<p class="tip-banner">하루 1회 · 주인 기력 −50<br>직접 일하기 일당 기존 대비 5배 · 승진마다 공사장 1일 / 회사 2일 / 츄르연구소 3일<br>집 보너스 ${Math.round(h.work * 100)}% · 탈것 ${Math.round(E.vehicleBonus(s) * 100)}% (최고 1개만) · 각 수입 보너스 곱연산 · 직원 고용 할인 ${h.discount * 100}%</p><div class="shop-grid">${E.jobs
       .map((j, i) => {
         const own = E.promotion(s, i),
           staff = E.promotion(s, i, true),
           hired = s.employees.includes(i);
         if (!E.jobUnlocked(s, i))
           return `<article class="shop-card"><h3>🔒 ${j.name}</h3><p>${E.jobs[i - 1].name} 주인 10단계 달성 시 해금</p></article>`;
-        return `<article class="shop-card"><span class="equipment-icon">${["⚒", "▣", "⚗"][i]}</span><h3>${j.name}</h3><p>주인 ${s.workLevels[i]}/10단계 · 근무 ${s.workDays[i]}일<br>일당 ${E.jobPay(s, i)} G</p><button class="btn primary" data-job="${i}" ${s.daily.work || s.energy < 50 || !E.canAct(s) ? "disabled" : ""}>직접 일하기 · 기력 −50</button><button class="btn" data-promote="owner:${i}" ${!own || s.workDays[i] < own.days || s.gold < own.cost ? "disabled" : ""}>${own ? `승진 ${money(own.cost)} G · 누적 ${own.days}일 필요` : "주인 최고 단계"}</button><p>직원 ${s.staffLevels[i]}/10단계 · 일당 ${E.jobPay(s, i, true)} G</p><button class="btn" data-hire="${i}" ${hired || s.gold < Math.floor(j.hire * (1 - h.discount)) ? "disabled" : ""}>${hired ? "직원 고용됨" : `직원 고용 ${money(Math.floor(j.hire * (1 - h.discount)))} G`}</button><button class="btn" data-promote="staff:${i}" ${!hired || !staff || s.staffLevels[i] >= s.workLevels[i] || s.gold < staff.cost ? "disabled" : ""}>${s.staffLevels[i] >= s.workLevels[i] && staff ? "주인 승진 필요" : staff ? `직원 교육 ${money(staff.cost)} G` : "직원 최고 단계"}</button></article>`;
+        return `<article class="shop-card"><span class="equipment-icon">${["⚒", "▣", "⚗"][i]}</span><h3>${j.name}</h3><p>주인 ${s.workLevels[i]}/10단계 · 근무 ${s.workDays[i]}일 · 현재 승진 근무 ${s.promotionDays[i]}일<br>일당 ${E.jobPay(s, i)} G</p><button class="btn primary" data-job="${i}" ${s.daily.work || s.energy < 50 || !E.canAct(s) ? "disabled" : ""}>직접 일하기 · 기력 −50</button><button class="btn" data-promote="owner:${i}" ${!own || s.promotionDays[i] < own.days || s.gold < own.cost ? "disabled" : ""}>${own ? `승진 ${money(own.cost)} G · 이번 단계 ${s.promotionDays[i]}/${own.days}일` : "주인 최고 단계"}</button><p>직원 ${s.staffLevels[i]}/10단계 · 일당 ${E.jobPay(s, i, true)} G</p><button class="btn" data-hire="${i}" ${hired || s.gold < Math.floor(j.hire * (1 - h.discount)) ? "disabled" : ""}>${hired ? "직원 고용됨" : `직원 고용 ${money(Math.floor(j.hire * (1 - h.discount)))} G`}</button><button class="btn" data-promote="staff:${i}" ${!hired || !staff || s.staffLevels[i] >= s.workLevels[i] || s.gold < staff.cost ? "disabled" : ""}>${s.staffLevels[i] >= s.workLevels[i] && staff ? "주인 승진 필요" : staff ? `직원 교육 ${money(staff.cost)} G` : "직원 최고 단계"}</button></article>`;
       })
       .join("")}</div><p class="game-notice">${statusText(s)}</p>`,
   );
@@ -543,7 +548,7 @@ function renderLive() {
     remaining = Math.max(0, 3 - s.day + s.liveDay),
     tier = socialLevel(s.liveFollowers);
   gameShell(
-    `${title("PET LIVE", "펫 Live", "매 방송 네 가지 상황, 상황마다 네 가지 선택!")}<div class="social-profile"><span class="social-avatar">●</span><div><strong>춘배의 Live</strong><p>팔로워 ${money(s.liveFollowers)}명 · ${remaining ? remaining + "일 후" : "오늘 방송 가능"}</p></div></div>${socialBackdrop(s.liveFollowers)}<div class="live-stage studio-${tier.level}">${studioProps()}${spriteMarkup("chunbae", "normal", "breathing")}<span class="live-badge">● LIVE PREVIEW</span></div><label class="field-label">방송 주제<select id="liveTopic">${LIVE_TOPICS.map((t, i) => `<option ${(i === 1 && !s.treats.some((n) => n > 0)) || (i === 2 && !s.toys.length) || (i === 9 && !s.romance) || (i === 11 && s.liveFollowers < 300) ? "disabled" : ""}>${t}</option>`).join("")}</select></label><button class="btn primary wide" id="startLive" ${remaining || s.energy < cost || !E.canAct(s) ? "disabled" : ""}>방송 시작 · 기력 −${cost}</button><p class="note">12개 주제 · 24개 상황 · 96개 선택지. 선택마다 팬·후원·행복도 결과가 달라져.<br>네 번째 선택은 돌발 도전! 45%로 대성공, 나머지는 소소한 반응이야.<br>소품은 소비하지 않아. 완료 시 썸냥이 만남 1%, 300명부터 협찬 방송 해금.</p>${s.lastLive ? `<p class="game-notice">지난 방송: 후원 ${s.lastLive.gold} G · 팔로워 +${s.lastLive.gain}</p>` : ""}`,
+    `${title("PET LIVE", "펫 Live", "매 방송 네 가지 상황, 상황마다 네 가지 선택!")}<div class="social-profile"><span class="social-avatar">●</span><div><strong>춘배의 Live</strong><p>팔로워 ${money(s.liveFollowers)}명 · ${remaining ? remaining + "일 후" : "오늘 방송 가능"}</p></div></div>${socialBackdrop(s.liveFollowers)}<div class="live-stage studio-${tier.level}">${studioProps()}${spriteMarkup("chunbae", "normal", "breathing")}<span class="live-badge">● LIVE PREVIEW</span></div><label class="field-label">방송 주제<select id="liveTopic">${LIVE_TOPICS.map((t, i) => `<option ${(i === 1 && !s.treats.some((n) => n > 0)) || (i === 2 && !s.toys.length) || (i === 9 && !s.romance) || (i === 11 && s.liveFollowers < 300) ? "disabled" : ""}>${t}</option>`).join("")}</select></label><button class="btn primary wide" id="startLive" ${remaining || s.energy < cost || !E.canAct(s) ? "disabled" : ""}>방송 시작 · 기력 −${cost}</button><p class="note">12개 주제 · 24개 상황 · 96개 선택지. 선택마다 팬·후원·행복도 결과가 달라져.<br>네 번째 선택은 돌발 도전! 45%로 대성공, 나머지는 소소한 반응이야.<br>소품은 소비하지 않아. 완료 시 썸냥이 만남 5%, 300명부터 협찬 방송 해금.</p>${s.lastLive ? `<p class="game-notice">지난 방송: 후원 ${s.lastLive.gold} G · 팔로워 +${s.lastLive.gain}</p>` : ""}`,
     renderInfluencer,
   );
   document.querySelector("#startLive").onclick = () => {
@@ -716,7 +721,11 @@ function renderBank(tab = "main") {
     );
     bind("buy", (value) => {
       const [t, i] = value.split(":");
+      const beforeGold = s.gold,
+        beforeDiamonds = s.diamonds;
       if (E.purchase(s, t, Number(i))) {
+        if (s.gold < beforeGold || s.diamonds < beforeDiamonds)
+          playEffect("purchase");
         save();
         renderBank("house");
         meow();
@@ -739,7 +748,7 @@ function renderBank(tab = "main") {
           "하루 −99%~+200% · 종목 1G 이하: 다음 날 보유분 소멸 · 3일 뒤 기본가격 재상장",
         ],
         ["building", "펫빌딩 구매", "매일 빌딩 가격의 2% 임대 수입"],
-        ["company", "펫회사 사기", "매일 회사 가격의 1% + 해당 회사 주식 1주"],
+        ["company", "펫회사 사기", "매일 금화 1% + 회사가의 1% 상당 주식"],
       ]
         .map(
           ([id, n, d]) =>
@@ -756,12 +765,16 @@ function renderInvest(type) {
   if (["building", "company"].includes(type)) {
     const items = type === "building" ? E.buildings : E.companies;
     gameShell(
-      `${title("PASSIVE INCOME", type === "building" ? "펫빌딩 구매" : "펫회사 사기", type === "company" ? "매일 회사 가격의 1% + 해당 회사 주식 1주 지급 · 현실 기업의 상대적 규모를 참고한 게임 가격" : "빌딩 9종 · 최고가 1,000,000 G · 매일 구매 가격의 2% 지급")}<div class="shop-grid">${items.map((item, i) => shopCard(type, item, i, s)).join("")}</div>`,
+      `${title("PASSIVE INCOME", type === "building" ? "펫빌딩 구매" : "펫회사 사기", type === "company" ? "매일 회사 가격의 1% 금화 + 회사 가격의 1% 상당 주식 지급 · 정산 시 주가 기준 · 주식은 소수 둘째 자리까지 내림 · 현실 기업의 상대적 규모를 참고한 게임 가격" : "빌딩 9종 · 최고가 1,000,000 G · 매일 구매 가격의 2% 지급")}<div class="shop-grid">${items.map((item, i) => shopCard(type, item, i, s)).join("")}</div>`,
       () => renderBank("spend"),
     );
     bind("buy", (v) => {
       const [t, i] = v.split(":");
+      const beforeGold = s.gold,
+        beforeDiamonds = s.diamonds;
       if (E.purchase(s, t, Number(i))) {
+        if (s.gold < beforeGold || s.diamonds < beforeDiamonds)
+          playEffect("purchase");
         save();
         renderInvest(type);
         notice("구매 완료! 이제 돈이 출근할 차례야.");
@@ -772,13 +785,14 @@ function renderInvest(type) {
   const items = type === "stock" ? E.companies : E.coins,
     book = type === "stock" ? s.stocks : s.coinHoldings;
   gameShell(
-    `${title("MARKET · DAY " + s.day, type === "stock" ? "펫주식 투자" : "펫코인 투자", type === "stock" ? "전일 대비 −30%~+30% (1G 단위 반올림) · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매도 수수료 4%" : "전일 대비 −99%~+200% (1G 단위 반올림) · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매도 수수료 4%")}<label class="field-label">거래 수량 · 1회 최대 1,000주/개<input id="tradeQty" type="number" min="1" max="1000" value="1"></label><div class="market-list">${items.map((item, i) => `<article class="market-row"><span><strong>${item.name}</strong><small>보유 ${book[i] || 0}${type === "stock" ? "주" : "개"}</small>${listingInfo(s, type, i)}</span><b>${E.price(s, type, i)} G<small>${marketChange(s, type, i)}</small></b><div class="market-order"><button class="btn" data-trade="${i}:buy" ${tradeCapacity(s, type, i, "buy") === 0 ? "disabled" : ""}>매수</button><small class="trade-capacity" data-capacity="${i}:buy">매수 가능<br><strong>${money(tradeCapacity(s, type, i, "buy"))}${type === "stock" ? "주" : "개"}</strong></small></div><div class="market-order"><button class="btn" data-trade="${i}:sell" ${tradeCapacity(s, type, i, "sell") === 0 ? "disabled" : ""}>매도</button><small class="trade-capacity" data-capacity="${i}:sell">매도 가능<br><strong>${money(tradeCapacity(s, type, i, "sell"))}${type === "stock" ? "주" : "개"}</strong></small></div></article>`).join("")}</div>`,
+    `${title("MARKET · DAY " + s.day, type === "stock" ? "펫주식 투자" : "펫코인 투자", type === "stock" ? "전일 대비 −30%~+30% (1G 단위 반올림) · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매수·매도 수수료 각각 2% · 소수 둘째 자리까지 거래" : "전일 대비 −99%~+200% (1G 단위 반올림) · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매도 수수료 4%")}<label class="field-label">거래 수량 · 1회 최대 1,000주/개<input id="tradeQty" type="number" min="${type === "stock" ? "0.01" : "1"}" step="${type === "stock" ? "0.01" : "1"}" max="1000" value="1"></label><div class="market-list">${items.map((item, i) => `<article class="market-row"><span><strong>${item.name}</strong><small>보유 ${type === "stock" ? (book[i] || 0).toFixed(2) : book[i] || 0}${type === "stock" ? "주" : "개"}</small>${listingInfo(s, type, i)}</span><b>${E.price(s, type, i)} G<small>${marketChange(s, type, i)}</small></b><div class="market-order"><button class="btn" data-trade="${i}:buy" ${tradeCapacity(s, type, i, "buy") === 0 ? "disabled" : ""}>매수</button><small class="trade-capacity" data-capacity="${i}:buy">매수 가능<br><strong>${type === "stock" ? tradeCapacity(s, type, i, "buy").toFixed(2) : money(tradeCapacity(s, type, i, "buy"))}${type === "stock" ? "주" : "개"}</strong></small></div><div class="market-order"><button class="btn" data-trade="${i}:sell" ${tradeCapacity(s, type, i, "sell") === 0 ? "disabled" : ""}>매도</button><small class="trade-capacity" data-capacity="${i}:sell">매도 가능<br><strong>${type === "stock" ? tradeCapacity(s, type, i, "sell").toFixed(2) : money(tradeCapacity(s, type, i, "sell"))}${type === "stock" ? "주" : "개"}</strong></small></div></article>`).join("")}</div>`,
     () => renderBank("spend"),
   );
   bind("trade", (v) => {
     const [i, side] = v.split(":"),
       qty = Number(document.querySelector("#tradeQty").value);
     if (E.trade(s, type, Number(i), side, qty)) {
+      if (side === "buy") playEffect("purchase");
       save();
       renderInvest(type);
       notice("거래 완료. 춘배는 투자 조언을 하지 않는다냥.");
@@ -789,16 +803,16 @@ function renderRomance(emotion = "normal") {
   const s = player(),
     r = s.romance,
     labels = ["썸냥이", "연인냥이", "부부냥이", "평생의 냥"];
-  const encounterHelp = `<div class="tip-banner"><strong>썸냥이 만나는 방법</strong><p>던전 클리어 1% · 산책 완료 3%<br>주인 일하기 완료 1% · 펫 Live 완료 1% · 펫스타 게시 완료 1%</p><p>활동 완료 때 각각 판정해. 이미 썸을 타도 다른 냥이를 만날 수 있어.</p></div>`;
+  const encounterHelp = `<div class="tip-banner"><strong>썸냥이 만나는 방법</strong><p>던전 클리어 5% · 공원산책·드라이브 완료 5%<br>주인 일하기 완료 5% · 펫 Live 완료 5% · 펫스타 게시 완료 5%</p><p>활동 완료 때 각각 판정해. 치즈냥이 한 종류만 등장해. 이미 함께라면 중복 만남은 없어.</p></div>`;
   if (!r) {
     gameShell(
-      `${title("LOVE, PAWS & CHURU", "연애")}<div class="empty-romance"><span>♡</span><h2>아직 만난 썸냥이가 없어!</h2><p>치즈냥이 · 턱시도냥이 · 백설냥이가 기다려.</p></div>${encounterHelp}`,
+      `${title("LOVE, PAWS & CHURU", "연애")}<div class="empty-romance"><span>♡</span><h2>아직 만난 썸냥이가 없어!</h2><p>어딘가에서 치즈냥이가 너를 기다려.</p></div>${encounterHelp}`,
     );
     return;
   }
   const b = E.relationshipBonus ? E.relationshipBonus(s) : null;
   gameShell(
-    `${title("ONE LITTLE LOVE STORY", "연애", E.partners[r.kind].name + "와 함께하는 이야기 · 행동마다 주인 기력 −25")}<div class="romance-stage">${spriteMarkup(r.kind, emotion, "breathing")}<span class="relationship-badge">${labels[r.stage]}</span><div class="romance-hearts">${"♥".repeat(Math.floor(r.affection))}${"♡".repeat(10 - Math.floor(r.affection))}</div></div><div class="tip-banner"><strong>호감도 ${r.affection.toFixed(2)} / ${r.stage === 0 ? 3 : r.stage === 1 ? 6 : 10}</strong><p>${r.stage === 0 ? "고백 성공 전에는 3을 넘지 않아." : r.stage === 1 ? "프로포즈 성공 전에는 6을 넘지 않아." : r.stage === 2 ? "10을 채우면 평생의 냥이 돼." : "평생 함께! 헤어지기·이혼·갈아타기 불가."}</p><p>${["썸을 알아가는 중", "활동 수입 +8% · 공격 +1 · 방어 +1", "활동 수입 +15% · 공격 +3 · 방어 +2 · 매일 20 G", "활동 수입 +30% · 공격 +6 · 방어 +4 · 매일 50 G와 참치 츄르"][r.stage]}</p></div><div class="romance-actions"><button class="btn" id="talkPartner" ${s.energy < 25 || s.daily.talk || !E.canAct(s) ? "disabled" : ""}>대화하기 · 기력 −25 · 하루 1회</button><button class="btn primary" id="confess" ${s.energy < 25 || r.stage !== 0 || r.affection < 3 || s.diamonds < 1 || !E.canAct(s) ? "disabled" : ""}>고백 · ◆1 · 기력 −25 · 성공 50%</button><button class="btn primary" id="propose" ${s.energy < 25 || r.stage !== 1 || r.affection < 6 || s.diamonds < 5 || !E.canAct(s) ? "disabled" : ""}>프로포즈 · ◆5 · 기력 −25 · 성공 50%</button>${r.stage < 3 ? `<button class="btn danger" id="breakUp" ${s.energy < 25 ? "disabled" : ""}>${r.stage === 2 ? "이혼하기 · 기력 −25" : "헤어지기 · 기력 −25"}</button>` : ""}</div><p class="note">실패해도 호감도는 떨어지지 않아. 고백·프로포즈 자체로 호감도가 오르지는 않아.</p><div class="section-heading"><h2>선물하기 · 오늘 ${s.daily.gift}/1</h2></div><div class="shop-grid">${E.treats.map((t, i) => `<article class="shop-card"><h3>${t.name}</h3><p>보유 ${s.treats[i]}개 · 호감도 +${t.affection}${r.kind === i ? " · 취향 보너스" : ""}</p><button class="btn" data-give-treat="${i}" ${s.energy < 25 || s.daily.gift || !s.treats[i] || !E.canAct(s) ? "disabled" : ""}>츄르 선물 · 기력 −25</button></article>`).join("")}${s.toys.map((i) => `<article class="shop-card"><h3>${E.toys[i].name}</h3><p>보유 ${s.toyBag[i] || 0}개 · 호감도 +${E.toys[i].affection.toFixed(2)}</p><button class="btn" data-give-toy="${i}" ${s.energy < 25 || s.daily.gift || !s.toyBag[i] || !E.canAct(s) ? "disabled" : ""}>장난감 선물 · 기력 −25</button></article>`).join("")}</div><div class="section-heading"><h2>데이트 · 하루 1회</h2></div><div class="shop-grid">${E.dates.map((d, i) => `<article class="shop-card"><h3>${d.name}</h3><p>${money(d.cost)} G · 호감도 +${d.gain}</p><button class="btn" data-date="${i}" ${s.energy < 25 || s.daily.date || s.gold < d.cost || !E.canAct(s) ? "disabled" : ""}>데이트 가기 · 기력 −25</button></article>`).join("")}</div>${s.candidate !== null && r.stage < 3 ? `<div class="new-crush">${spriteMarkup(s.candidate, "surprise")}<h2>${E.partners[s.candidate].name}가 다가왔어!</h2><p>갈아타면 기존 관계는 끝나고 호감도 0부터 시작해.</p><button class="btn" id="switchPartner" ${s.energy < 25 ? "disabled" : ""}>갈아타기 · 기력 −25</button></div>` : ""}<details><summary>만남 확률 보기</summary>${encounterHelp}</details>`,
+    `${title("ONE LITTLE LOVE STORY", "연애", escapeLog(E.partnerName(s)) + "와 함께하는 이야기 · 행동마다 주인 기력 −25")}<div class="romance-stage">${spriteMarkup(r.kind, emotion, "breathing")}<span class="relationship-badge">${labels[r.stage]}</span><div class="romance-hearts">${"♥".repeat(Math.floor(r.affection))}${"♡".repeat(10 - Math.floor(r.affection))}</div></div><div class="tip-banner"><strong>호감도 ${r.affection.toFixed(2)} / ${r.stage === 0 ? 3 : r.stage === 1 ? 6 : 10}</strong><p>${r.stage === 0 ? "고백 성공 전에는 3을 넘지 않아." : r.stage === 1 ? "프로포즈 성공 전에는 6을 넘지 않아." : r.stage === 2 ? "10을 채우면 평생의 냥이 돼." : "평생 함께! 헤어지기·이혼·갈아타기 불가."}</p><p>${["썸을 알아가는 중", "활동 수입 +8% · 공격 +1 · 방어 +1", "활동 수입 +15% · 공격 +3 · 방어 +2 · 매일 20 G", "활동 수입 +30% · 공격 +6 · 방어 +4 · 매일 50 G와 참치 츄르"][r.stage]}</p></div><div class="romance-actions"><button class="btn" id="talkPartner" ${s.energy < 25 || s.daily.talk || !E.canAct(s) ? "disabled" : ""}>대화하기 · 기력 −25 · 하루 1회</button><button class="btn primary" id="confess" ${s.energy < 25 || r.stage !== 0 || r.affection < 3 || s.diamonds < 1 || !E.canAct(s) ? "disabled" : ""}>고백 · ◆1 · 기력 −25 · 성공 50%</button><button class="btn primary" id="propose" ${s.energy < 25 || r.stage !== 1 || r.affection < 6 || s.diamonds < 5 || !E.canAct(s) ? "disabled" : ""}>프로포즈 · ◆5 · 기력 −25 · 성공 50%</button>${r.stage < 3 ? `<button class="btn danger" id="breakUp" ${s.energy < 25 ? "disabled" : ""}>${r.stage === 2 ? "이혼하기 · 기력 −25" : "헤어지기 · 기력 −25"}</button>` : ""}</div><p class="note">실패해도 호감도는 떨어지지 않아. 고백·프로포즈 자체로 호감도가 오르지는 않아.</p><div class="section-heading"><h2>선물하기 · 오늘 ${s.daily.gift}/1</h2></div><div class="shop-grid">${E.treats.map((t, i) => `<article class="shop-card"><h3>${t.name}</h3><p>보유 ${s.treats[i]}개 · 호감도 +${t.affection}${r.kind === i ? " · 취향 보너스" : ""}</p><button class="btn" data-give-treat="${i}" ${s.energy < 25 || s.daily.gift || !s.treats[i] || !E.canAct(s) ? "disabled" : ""}>츄르 선물 · 기력 −25</button></article>`).join("")}${s.toys.map((i) => `<article class="shop-card"><h3>${E.toys[i].name}</h3><p>보유 ${s.toyBag[i] || 0}개 · 호감도 +${E.toys[i].affection.toFixed(2)}</p><button class="btn" data-give-toy="${i}" ${s.energy < 25 || s.daily.gift || !s.toyBag[i] || !E.canAct(s) ? "disabled" : ""}>장난감 선물 · 기력 −25</button></article>`).join("")}</div><div class="section-heading"><h2>데이트 · 하루 1회</h2></div><div class="shop-grid">${E.dates.map((d, i) => `<article class="shop-card"><h3>${d.name}</h3><p>${money(d.cost)} G · 호감도 +${d.gain}</p><button class="btn" data-date="${i}" ${s.energy < 25 || s.daily.date || s.gold < d.cost || !E.canAct(s) ? "disabled" : ""}>데이트 가기 · 기력 −25</button></article>`).join("")}</div>${s.candidate !== null && r.stage < 3 ? `<div class="new-crush">${spriteMarkup(s.candidate, "surprise")}<h2>${E.partners[s.candidate].name}가 다가왔어!</h2><p>갈아타면 기존 관계는 끝나고 호감도 0부터 시작해.</p><button class="btn" id="switchPartner" ${s.energy < 25 ? "disabled" : ""}>갈아타기 · 기력 −25</button></div>` : ""}<details><summary>만남 확률 보기</summary>${encounterHelp}</details>`,
   );
   document.querySelector("#talkPartner").onclick = () => {
     if (E.talk(s)) {
@@ -902,38 +916,189 @@ function playIntro() {
   cleanupView();
   const s = player();
   document.body.dataset.screen = "intro";
-  let step = 0;
+  let step = 0,
+    sceneAudio = null,
+    currentScene = "";
   const lines = [
-    ["늦은 오후, 집으로 가는 길…", "풀숲에서 아주 작은 울음소리가 들려왔다."],
-    ["집사", "어? 너… 왜 여기 혼자 있니?"],
-    ["춘배", "…냐옹."],
-    ["집사", "많이 추웠지? 괜찮아. 이제 혼자 안 둬."],
     [
-      "집사",
-      "이름은 춘배 어때? 우리 같이 가자. 집은 아직 없지만… 방법은 있겠지!",
+      "battle",
+      "오래전, 마지막 성문 앞",
+      "검게 물든 하늘 아래, 춘배와 치즈냥이는 나란히 서 있었다. 둘의 뒤에는 아직 지켜야 할 작은 마을이 있었다.",
     ],
-    ["춘배", "냐옹!"],
+    [
+      "demon",
+      "마왕",
+      "고작 작은 발톱으로 나를 막겠다고? 그렇다면 너희가 서로를 지키는 이유부터 빼앗아 주마.",
+    ],
+    [
+      "demon",
+      "치즈냥이",
+      "춘배야, 무서워도 내 옆에 있어. 우리… 언제나 같이 돌아가기로 했잖아.",
+    ],
+    ["battle", "춘배", "응. 네가 있는 곳이라면, 나는 끝까지 싸울 거야!"],
+    [
+      "curse",
+      "마왕",
+      "잊어라. 함께 웃었던 날도, 서로를 부르던 이름도. 너희의 모든 기억을 이 어둠 속에 묻어라!",
+    ],
+    [
+      "curse",
+      "기억의 틈",
+      "익숙한 목소리가 멀어졌다. 약속도, 집으로 가는 길도, 바로 옆에 있던 친구의 이름마저 하얗게 흩어졌다.",
+    ],
+    [
+      "flight",
+      "마왕의 마지막 일격",
+      "거대한 충격이 성문을 갈랐다. 맞잡으려던 두 발이 엇갈리고, 춘배와 치즈냥이는 서로 다른 먼 곳으로 날아갔다.",
+    ],
+    [
+      "rain",
+      "며칠 뒤, 비 오는 숲",
+      "쏟아지는 빗소리 사이로 작은 울음이 새어 나왔다. 나무 아래 웅크린 고양이는 자신이 어디에서 왔는지도 몰랐다.",
+    ],
+    ["rain", "집사", "어…? 너, 왜 이런 데 혼자 있니? 발도 온통 젖었잖아."],
+    [
+      "rain",
+      "춘배",
+      "…냐옹. (떠올리려 할수록 머릿속이 텅 비었다. 그런데 누군가를 찾아야 할 것만 같았다.)",
+    ],
+    [
+      "rain",
+      "집사",
+      "괜찮아. 무서워하지 마. 따뜻한 곳부터 찾자. 나도 가진 건 별로 없지만… 같이 있으면 방법이 생기겠지.",
+    ],
+    [
+      "rain",
+      "집사",
+      "춘배라고 불러도 될까? 왠지 너한테 잘 어울려. 자, 우리 같이 가자.",
+    ],
+    [
+      "rain",
+      "낯익은 울음",
+      "숲 너머에서 고양이 울음이 들린 듯했다. 춘배는 잠깐 뒤돌아봤다. 누구였을까. 왜 이렇게 가슴이 먹먹할까.",
+    ],
+    [
+      "dawn",
+      "잊어버린 이야기의 첫날",
+      "모든 기억을 잃어도, 다시 만날 인연은 남아 있다. 춘배와 집사의 조금 이상하고 따뜻한 냥생이 시작된다.",
+    ],
   ];
   function draw() {
-    app.innerHTML = `<section class="intro-panel"><div class="intro-forest"><div class="intro-tree"></div><div class="intro-bush bush-left"></div><div class="intro-bush bush-right"></div>${spriteMarkup("chunbae", step < 4 ? "sad" : "happy", step < 4 ? "shivering" : "breathing")}<span class="intro-sun">✦</span></div><div class="intro-dialogue"><small id="introSpeaker"></small><p id="introLine"></p><div class="intro-actions"><button class="text-button" id="skipIntro">건너뛰기</button><button class="btn primary" id="nextIntro">${step === lines.length - 1 ? "춘배와 시작하기" : "다음 →"}</button></div></div></section>`;
+    const [scene, speaker, line] = lines[step];
+    if (scene !== currentScene) {
+      sceneAudio?.stop();
+      currentScene = scene;
+      const names = {
+        demon: "demon",
+        curse: "memory",
+        flight: "flight",
+        rain: "rain",
+      };
+      sceneAudio = names[scene]
+        ? playMedia(
+            names[scene],
+            scene === "rain" ? 0.38 : 0.65,
+            scene === "rain",
+          )
+        : null;
+    }
+    const forest = scene === "rain" || scene === "dawn";
+    app.innerHTML = `<section class="intro-panel"><div class="intro-forest story-scene story-${scene}">${forest ? '<div class="intro-tree"></div><div class="intro-bush bush-left"></div><div class="intro-bush bush-right"></div>' : '<div class="dark-castle">♜</div><div class="demon-king"><span>♛</span><strong>魔</strong></div><div class="curse-rings"></div>'}<div class="story-cats">${spriteMarkup("chunbae", forest ? (scene === "dawn" ? "happy" : "sad") : "surprise", forest ? "shivering" : "")}${!forest ? spriteMarkup(0, "surprise", "story-cheese") : ""}</div>${scene === "rain" ? '<div class="rain-layer"></div>' : ""}<span class="intro-sun">✦</span></div><div class="intro-dialogue"><small id="introSpeaker"></small><p id="introLine"></p><div class="intro-actions"><button class="text-button" id="skipIntro">건너뛰기</button><span>${step + 1} / ${lines.length}</span><button class="btn primary" id="nextIntro">${step === lines.length - 1 ? "춘배와 시작하기" : "다음 →"}</button></div></div></section>`;
     document.getElementById("introSpeaker").textContent =
-      lines[step][0] === "집사" ? s.ownerName || "집사" : lines[step][0];
-    document.getElementById("introLine").textContent = lines[step][1];
+      speaker === "집사" ? s.ownerName || "집사" : speaker;
+    document.getElementById("introLine").textContent = line;
     document.getElementById("skipIntro").onclick = finish;
     document.getElementById("nextIntro").onclick = () => {
-      step++;
-      if (step >= lines.length) finish();
-      else {
-        draw();
-        if (step === 2 || step === 5) meow(0.9);
-      }
+      if (++step >= lines.length) finish();
+      else draw();
     };
   }
   function finish() {
     s.introSeen = true;
+    sceneAudio?.stop();
     save();
     renderHome();
   }
+  setCleanup(() => sceneAudio?.stop());
+  draw();
+}
+
+let meetingScheduled = false,
+  meetingOpen = false;
+modal.addEventListener("close", () => {
+  if (!meetingOpen) schedulePartnerMeeting();
+});
+function schedulePartnerMeeting() {
+  if (meetingScheduled || meetingOpen) return;
+  meetingScheduled = true;
+  setTimeout(() => {
+    meetingScheduled = false;
+    const s = slots[selectedSlot];
+    if (
+      !s?.romance?.namePending ||
+      !s.introSeen ||
+      document.body.dataset.screen !== "game" ||
+      activeActivity ||
+      modal.open
+    )
+      return;
+    showPartnerMeeting(s);
+  }, 50);
+}
+function showPartnerMeeting(s) {
+  if (!s.romance?.namePending || meetingOpen) return;
+  meetingOpen = true;
+  let step = 0;
+  const lines = [
+    ["낯익은 치즈냥이", "저기… 우리, 어디선가 만난 적 있지 않아?"],
+    [
+      "춘배",
+      "모르겠어. 아무것도 기억나지 않아. 그런데 네 목소리는… 이상하게 따뜻해.",
+    ],
+    ["치즈냥이", "나도 그래. 아주 오래전부터 너를 기다린 기분이야."],
+    ["춘배", "그럼 지금부터 다시 알아가면 되지. 너는 이름이 뭐니?"],
+  ];
+  function draw() {
+    showModal(
+      "다시 만난 인연",
+      `<div class="meeting-cats">${spriteMarkup("chunbae", "surprise")}${spriteMarkup(0, step < 2 ? "surprise" : "happy")}</div><p class="meeting-speaker">${lines[step][0]}</p><p>${lines[step][1]}</p>${step === 3 ? '<label class="field-label">썸냥이 이름 (1~12자)<input id="partnerName" maxlength="12" placeholder="치즈냥이" autocomplete="off"></label><p id="partnerNameError" role="alert"></p>' : ""}`,
+    );
+    const button = modal.querySelector(".btn");
+    button.textContent = step === 3 ? "이름 확정하고 넘어가기" : "다음 →";
+    button.onclick = () => {
+      if (step < 3) {
+        step++;
+        draw();
+        return;
+      }
+      if (!E.namePartner(s, modal.querySelector("#partnerName").value)) {
+        modal.querySelector("#partnerNameError").textContent =
+          "이름을 1~12자로 적어 줘.";
+        return;
+      }
+      modal.close();
+      meetingOpen = false;
+      save();
+      renderRomance("happy");
+      catVoice("happy");
+    };
+    if (step === 3) {
+      modal.querySelector("#partnerName").focus();
+      modal.querySelector("#partnerName").onkeydown = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          button.click();
+        }
+      };
+    }
+  }
+  modal.addEventListener(
+    "cancel",
+    () => {
+      meetingOpen = false;
+    },
+    { once: true },
+  );
   draw();
 }
 
@@ -950,7 +1115,7 @@ function dailyEventPanel(s) {
       "오늘 직접 일하기 일당 +30%",
       "오늘 펫마트 상품 30% 할인",
       "오늘 대화·데이트 호감도 +30%",
-      "공원 보상 +30% · 만남 3.9%",
+      "공원 보상 +30% · 치즈냥이 만남 5%",
       "금화 또는 광고 출연으로 해결",
       "금화 또는 기력 50으로 해결",
       "손톱 다듬기 · 기력 −25 · 행복도 +10",
@@ -995,7 +1160,13 @@ function renderCalendar() {
 function tradeCapacity(s, type, i, side) {
   if (E.listing(s, type, i) || E.price(s, type, i) <= 1) return 0;
   return side === "buy"
-    ? Math.max(0, Math.floor(s.gold / E.price(s, type, i)))
+    ? Math.max(
+        0,
+        type === "stock"
+          ? Math.floor((s.gold / (E.price(s, type, i) * 1.02)) * 100 + 1e-8) /
+              100
+          : Math.floor(s.gold / E.price(s, type, i)),
+      )
     : (type === "stock" ? s.stocks : s.coinHoldings)[i] || 0;
 }
 function listingInfo(s, t, i) {
@@ -1018,7 +1189,7 @@ function portfolio(s) {
       if (q) {
         const value = E.price(s, t, +i) * q,
           cost = s.costBasis[t][i] || 0;
-        rows += `<p><strong>${list[i].name}</strong>${listingInfo(s, t, +i)} ${q}${t === "stock" ? "주" : "개"} · ${money(value)} G · ${marketChange(s, t, +i)}<br>평가손익 ${money(value - cost)} G (${cost ? ((value / cost - 1) * 100).toFixed(1) : "0"}%)</p>`;
+        rows += `<p><strong>${list[i].name}</strong>${listingInfo(s, t, +i)} ${t === "stock" ? q.toFixed(2) : q}${t === "stock" ? "주" : "개"} · ${money(value)} G · ${marketChange(s, t, +i)}<br>평가손익 ${money(value - cost)} G (${cost ? ((value / cost - 1) * 100).toFixed(1) : "0"}%)</p>`;
       }
   }
   return `<section class="portfolio"><h2>내 자산 포트폴리오</h2>${rows || "<p>보유 주식·코인 없음</p>"}<p>⌂ 현재 집: ${E.houses[s.house].name} · 보유 ${s.houses.length}채</p><p>${s.houses.map((i) => E.houses[i].name).join(" / ")}</p><p>실현손익 · 주식 ${money(s.realized.stock)} G / 코인 ${money(s.realized.coin)} G</p><small>평가손익은 매도 수수료 전 · 기존 저장의 매입원가는 업데이트 시점 가격으로 시작</small></section>`;

@@ -10,7 +10,7 @@ const test = (name, fn) => {
 };
 const advance = (s) => {
   s.energy = Math.min(s.energy, 25);
-  return E.nextDay(s,()=>.99);
+  return E.nextDay(s, () => 0.99);
 };
 const fresh = (o = {}) =>
   E.normalize({
@@ -183,24 +183,17 @@ test("romance gates, exact diamond costs, no affection loss, permanent end stage
   assert.equal(E.meet(s, "walk", 0, 0), null);
   assert.ok(E.bonus(s) >= 0.3);
 });
-test("meeting chance by completed activity and partner switching resets affection", () => {
-  for (const source of ["dungeon", "work", "live", "star"]) {
+test("all eligible completions meet only cheese at five percent, no duplicate partner", () => {
+  for (const source of ["dungeon", "work", "live", "star", "walk"]) {
     const s = fresh();
-    assert.equal(E.meet(s, source, 0.011), null);
-    assert.ok(E.meet(s, source, 0.009, 0));
+    assert.equal(E.meet(s, source, 0.05), null);
+    assert.ok(E.meet(s, source, 0.04999));
     assert.equal(s.romance.kind, 0);
+    assert.equal(E.meet(s, source, 0), null);
+    assert.equal(s.candidate, null);
+    assert.ok(E.namePartner(s, "치즈"));
+    assert.equal(E.partnerName(s), "치즈");
   }
-  const s = fresh();
-  assert.equal(E.meet(s, "walk", 0.031), null);
-  assert.ok(E.meet(s, "walk", 0.029, 0));
-  s.romance.affection = 2;
-  assert.ok(E.meet(s, "walk", 0, 0.99));
-  assert.equal(s.candidate, 2);
-  assert.ok(E.switchPartner(s));
-  assert.equal(s.romance.affection, 0);
-  assert.equal(s.romance.kind, 2);
-  assert.ok(E.breakUp(s));
-  assert.equal(s.romance, null);
 });
 test("work ten-level progression, house/car perks, free activities during work", () => {
   const s = fresh({ gold: 1e8, house: 3, vehicles: [0, 1, 2] });
@@ -209,9 +202,10 @@ test("work ten-level progression, house/car perks, free activities during work",
   assert.equal(E.vehicleBonus(s), 0.25);
   assert.equal(E.promote(s, 0), false);
   s.workDays[0] = 2;
+  s.promotionDays[0] = 1;
   assert.ok(E.promote(s, 0));
   assert.equal(s.workLevels[0], 2);
-  assert.equal(E.jobPay(s, 0), Math.floor(28 * 2 * 1.5 * 1.2 * 1.15 * 1.25));
+  assert.equal(E.jobPay(s, 0), Math.floor(28 * 10 * 1.5 * 1.2 * 1.15 * 1.25));
   assert.ok(E.hire(s, 0));
   assert.ok(E.promote(s, 0, true));
   assert.equal(E.promote(s, 0, true), false);
@@ -239,7 +233,7 @@ test("daily company stock, passive income, housing mood and visible deltas settl
     romance: { kind: 1, stage: 2, affection: 6, since: 1 },
   });
   advance(s);
-  assert.equal(s.stocks[0], 1);
+  assert.equal(s.stocks[0], 5);
   assert.equal(s.gold, 100 + 9000 + 360 + 20);
   assert.equal(s.happiness, 86);
   assert.deepEqual(s.lastDayDelta, {
@@ -253,9 +247,15 @@ test("daily company stock, passive income, housing mood and visible deltas settl
     affection: 0,
   });
   E.normalize(s);
-  assert.equal(s.stocks[0], 1);
+  assert.equal(s.stocks[0], 5);
+  const expected =
+    5 +
+    Math.floor(
+      ((E.companies[0].cost * 0.01) / E.price(s, "stock", 0)) * 100 + 1e-8,
+    ) /
+      100;
   advance(s);
-  assert.equal(s.stocks[0], 2);
+  assert.equal(s.stocks[0], expected);
 });
 test("daily market ranges stay positive and within advertised bounds", () => {
   const s = fresh();
@@ -314,7 +314,7 @@ test("cross followers do not recurse", () => {
   assert.equal(s.followers, 110);
   assert.equal(s.liveFollowers, 70);
 });
-test("roulette remains 15/15/1 with green 30x and slots expected return 88%", () => {
+test("roulette remains 15/15/1 with green 30x and slots expected return 90%", () => {
   const counts = { red: 0, black: 0, green: 0 };
   for (let i = 0; i < 31; i++) {
     const s = fresh({ gold: 1000 });
@@ -324,15 +324,13 @@ test("roulette remains 15/15/1 with green 30x and slots expected return 88%", ()
   }
   assert.deepEqual(counts, { red: 15, black: 15, green: 1 });
   let total = 0;
-  for (let a = 0; a < 5; a++)
-    for (let b = 0; b < 5; b++)
-      for (let c = 0; c < 5; c++)
-        total += E.slot(fresh({ gold: 100 }), 100, [
-          (a + 0.5) / 5,
-          (b + 0.5) / 5,
-          (c + 0.5) / 5,
-        ]).payout;
-  assert.equal(total / 125, 88);
+  for (let i = 0; i < 10000; i++)
+    total += E.slot(fresh({ gold: 100 }), 100, [
+      (i + 0.5) / 10000,
+      0.5,
+      0.5,
+    ]).payout;
+  assert.equal(total / 10000, 90);
 });
 test("partial survival rewards, casino unlock and replay protection", () => {
   const s = fresh({ energy: 100 });
@@ -492,7 +490,7 @@ test("job gates, staff cap, price changes, drive gate and equipment ten levels",
   s.romance = { kind: 0, stage: 0, affection: 0 };
   assert.ok(E.drive(s));
   assert.equal(s.romance.affection, 0.1);
-  s.weapon=1;
+  s.weapon = 1;
   s.weaponUp = 19;
   assert.ok(E.upgradeCost(s, "weapon") > 0);
   s.weaponUp = 20;
@@ -504,10 +502,10 @@ test("average cost, realized loss and automatic liquidation", () => {
   assert.ok(E.trade(s, "stock", 0, "buy", 2));
   s.market.stock[0] = p * 2;
   assert.ok(E.trade(s, "stock", 0, "buy", 2));
-  assert.equal(s.costBasis.stock[0], p * 6);
+  assert.equal(s.costBasis.stock[0], p * 6 * 1.02);
   assert.ok(E.trade(s, "stock", 0, "sell", 1));
-  assert.equal(s.costBasis.stock[0], p * 4.5);
-  assert.equal(s.realized.stock, p * 2 * 0.96 - p * 1.5);
+  assert.equal(s.costBasis.stock[0], p * 4.5 * 1.02);
+  assert.equal(s.realized.stock, p * 2 * 0.98 - p * 1.5 * 1.02);
   s.market.stock[0] = 1;
   const report = [];
   E.liquidate(s, report);
@@ -609,7 +607,8 @@ test("survival clear gold is reduced to twenty percent while XP and partner iden
   });
   assert.equal(r.gold, 210);
   assert.equal(r.xp, 452);
-  assert.equal(E.partners[2].name, "백설냥이");
+  assert.equal(E.partners.length, 1);
+  assert.equal(E.partners[0].name, "치즈냥이");
 });
 test("global price crash halts trade, wipes next day, and relists exactly day three without restoring holdings", () => {
   for (const type of ["stock", "coin"])
@@ -677,7 +676,7 @@ test("nine buildings yield two percent, companies one percent, and sleep enforce
   assert.equal(s.day, 1);
   assert.equal(s.energy, 26);
   s.energy = 25;
-  assert.ok(E.nextDay(s,()=>.99));
+  assert.ok(E.nextDay(s, () => 0.99));
   assert.equal(s.day, 2);
   assert.equal(s.energy, 100);
   assert.equal(E.nextDay(s), null);

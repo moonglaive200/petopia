@@ -44,12 +44,68 @@ function soundContext() {
   if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
   return audioContext;
 }
+// User-provided audio. Loop intent survives mute; scene cleanup always releases it.
+const mediaLoops = new Set(),
+  mediaShots = new Set();
+function playMedia(name, volume = 0.6, loop = false) {
+  const audio = new Audio(`assets/${name}.mp3`);
+  audio.volume = volume;
+  audio.loop = loop;
+  const entry = {
+    audio,
+    wanted: true,
+    stop() {
+      this.wanted = false;
+      audio.pause();
+      audio.currentTime = 0;
+      mediaLoops.delete(this);
+      mediaShots.delete(this);
+    },
+    pause() {
+      this.wanted = false;
+      audio.pause();
+    },
+    resume() {
+      this.wanted = true;
+      if (sound && audio.paused) audio.play().catch(() => {});
+    },
+  };
+  (loop ? mediaLoops : mediaShots).add(entry);
+  audio.onended = () => mediaShots.delete(entry);
+  audio.onerror = () => {
+    mediaShots.delete(entry);
+    mediaLoops.delete(entry);
+  };
+  if (sound) audio.play().catch(() => {});
+  else if (!loop) {
+    mediaShots.delete(entry);
+    entry.wanted = false;
+  }
+  return entry;
+}
+const sampleEffects = {
+  claw: "weapon-swing",
+  purchase: "purchase",
+  "enhance-success": "enhance-success",
+  "enhance-break": "enhance-break",
+};
 function playEffect(type) {
   if (!sound) return;
   const time = performance.now(),
     gap = type === "step" ? 180 : type === "hit" ? 100 : 75;
   if (time - (effectTimes[type] || -1000) < gap) return;
   effectTimes[type] = time;
+  if (sampleEffects[type]) {
+    // Attack samples may overlap briefly, never grow into an unlimited audio pile.
+    if (
+      type === "claw" &&
+      [...mediaShots].filter((v) => v.audio.src.endsWith("weapon-swing.mp3"))
+        .length >= 3
+    )
+      return;
+    playMedia(sampleEffects[type], type === "claw" ? 0.8 : 0.65);
+    return;
+  }
   if (type === "shutter") {
     shutterAudio.currentTime = 0;
     shutterAudio.volume = 0.45;
@@ -96,7 +152,13 @@ function playEffect(type) {
           start + 0.15,
         );
       g.gain.setValueAtTime(0.0001, start);
-      g.gain.exponentialRampToValueAtTime(volume, start + 0.008);
+      g.gain.exponentialRampToValueAtTime(
+        volume *
+          (["claw", "fish", "bell", "yarn", "laser", "puddle"].includes(type)
+            ? 2.8
+            : 1),
+        start + 0.008,
+      );
       g.gain.exponentialRampToValueAtTime(0.0001, start + 0.19);
       o.connect(g);
       g.connect(a.destination);
@@ -182,6 +244,11 @@ function playCombatAmbience(time) {
   } catch {}
 }
 window.addEventListener("petopia-sound", () => {
+  for (const entry of mediaLoops) {
+    if (sound && entry.wanted) entry.audio.play().catch(() => {});
+    else entry.audio.pause();
+  }
+  if (!sound) for (const entry of [...mediaShots]) entry.stop();
   if (!sound) {
     shutterAudio.pause();
     catTimers.forEach(clearTimeout);
@@ -198,9 +265,45 @@ function drawWalkingCat(ctx, x, y, size, p, time) {
     return;
   }
   const row = p.facing || 0,
-    col = motion && p.walking ? Math.floor((p.walkDistance || 0) / 18) % 4 : 0,
-    sw = image.width / 4,
-    sh = image.height / 4;
+    col = motion && p.walking ? Math.floor((p.walkDistance || 0) / 18) % 4 : 0;
+  // The artwork is not an equal 4x4 grid. Per-row bounds retain tails and paws.
+  const rows = [
+      [19, 338],
+      [340, 615],
+      [629, 883],
+      [895, 1189],
+    ],
+    columns = [
+      [
+        [46, 295],
+        [379, 588],
+        [675, 912],
+        [996, 1261],
+      ],
+      [
+        [27, 340],
+        [341, 644],
+        [649, 962],
+        [967, 1273],
+      ],
+      [
+        [28, 330],
+        [344, 639],
+        [655, 954],
+        [963, 1278],
+      ],
+      [
+        [32, 296],
+        [411, 595],
+        [704, 971],
+        [1015, 1264],
+      ],
+    ],
+    sx = columns[row][col][0],
+    sy = rows[row][0],
+    sw = columns[row][col][1] - sx,
+    sh = rows[row][1] - sy,
+    scale = size / Math.max(sw, sh);
   ctx.save();
   ctx.translate(
     x,
@@ -213,14 +316,14 @@ function drawWalkingCat(ctx, x, y, size, p, time) {
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(
     image,
-    col * sw,
-    row * sh,
+    sx,
+    sy,
     sw,
     sh,
-    -size / 2,
-    -size / 2,
-    size,
-    size,
+    (-sw * scale) / 2,
+    (-sh * scale) / 2,
+    sw * scale,
+    sh * scale,
   );
   ctx.restore();
 }

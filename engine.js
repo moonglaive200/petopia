@@ -230,11 +230,7 @@
     ][i];
     c.income = Math.round(c.cost * 0.01);
   });
-  const partners = [
-    { name: "치즈냥이", row: 0, likes: 0 },
-    { name: "턱시도냥이", row: 1, likes: 1 },
-    { name: "백설냥이", row: 2, likes: 2 },
-  ];
+  const partners = [{ name: "치즈냥이", row: 0, likes: 0 }];
   const bossNames = [
     "조커의남자",
     "츄르 밀수왕",
@@ -255,6 +251,8 @@
   }));
   const defaultDaily = () => ({
     walk: 0,
+    drive: 0,
+    arcade: 0,
     dungeon: 0,
     star: 0,
     influence: 0,
@@ -276,6 +274,11 @@
   function normalize(s) {
     const prev = s.version || 1;
     const d = {
+      healingVersion: 0,
+      promotionVersion: 0,
+      promotionDays: [0, 0, 0],
+      guideDay: 0,
+      guideTip: 0,
       gearVersion: 0,
       gearUp: { weapon: {}, armor: {} },
       introSeen: true,
@@ -369,6 +372,19 @@
         if (q && s.costBasis[type][i] === undefined)
           s.costBasis[type][i] = price(s, type, +i) * q;
     }
+    if (!s.healingVersion) {
+      // The old shared allowance has no source tag: retain only park usage.
+      s.healingVersion = 1;
+    }
+    if (!s.promotionVersion) {
+      s.promotionDays = s.workDays.map((n, i) => Math.min(n, i + 1));
+      s.promotionVersion = 1;
+    }
+    if (s.romance) {
+      s.romance.kind = 0;
+      if (!s.romance.name) s.romance.namePending = true;
+    }
+    s.candidate = null;
     syncMarketListings(s);
     if (!s.gearVersion) {
       for (const type of ["weapon", "armor"]) {
@@ -607,7 +623,7 @@
     s.energy -= energy;
     log(
       s,
-      `${{ walk: "힐링하기", dungeon: "냥서바이벌", work: "근무" }[key] || key} 시작 · 주인 기력 −${energy}`,
+      `${{ walk: "공원산책", drive: "드라이브", arcade: "방앗간", casino: "카지노", dungeon: "냥서바이벌", work: "근무" }[key] || key} 시작 · 주인 기력 −${energy}`,
     );
     return true;
   }
@@ -656,7 +672,14 @@
   }
   function enhance(s, type, r = Math.random()) {
     const info = upgradeInfo(s, type);
-    if (!info || !canAct(s) || r < 0 || r >= 1 || !spend(s, info.cost))
+    if (
+      !info ||
+      !canAct(s) ||
+      !Number.isFinite(r) ||
+      r < 0 ||
+      r >= 1 ||
+      !spend(s, info.cost)
+    )
       return null;
     const id = s[type],
       item = (type === "weapon" ? weapons : armors)[id];
@@ -741,7 +764,7 @@
     const level = (staff ? s.staffLevels : s.workLevels)[i];
     return Math.floor(
       jobs[i].pay *
-        (staff ? 5 : 2) *
+        (staff ? 5 : 10) *
         (1 + (level - 1) * (staff ? 0.3 : 0.5)) *
         (1 + bonus(s)) *
         (staff ? 1 + houses[s.house].staff : 1 + vehicleBonus(s)) *
@@ -754,7 +777,7 @@
     if (lv >= 10) return null;
     return {
       cost: Math.round((staff ? jobs[i].hire * 0.4 : 1000 + i * 600) * lv * lv),
-      days: staff ? 0 : lv * 2,
+      days: staff ? 0 : i + 1,
     };
   }
   function promote(s, i, staff = false) {
@@ -764,11 +787,12 @@
       !jobUnlocked(s, i) ||
       (staff && s.staffLevels[i] >= s.workLevels[i]) ||
       (staff && !s.employees.includes(i)) ||
-      (!staff && s.workDays[i] < p.days) ||
+      (!staff && s.promotionDays[i] < p.days) ||
       !spend(s, p.cost)
     )
       return false;
     (staff ? s.staffLevels : s.workLevels)[i]++;
+    if (!staff) s.promotionDays[i] = 0;
     return true;
   }
   function startJob(s, i) {
@@ -785,21 +809,39 @@
     s.employees.push(i);
     return true;
   }
-  function meet(s, source, r = Math.random(), typeRoll = Math.random()) {
+  function meet(s, source, r = Math.random()) {
     s.completionSerial++;
-    const chance = source === "walk" ? 0.03 * (eventIs(s, 5) ? 1.3 : 1) : 0.01;
-    if (s.romance?.stage === 3 || r >= chance) return null;
-    const choices = [0, 1, 2].filter((i) => i !== s.romance?.kind);
-    const kind =
-      choices[
-        Math.min(choices.length - 1, Math.floor(typeRoll * choices.length))
-      ];
-    if (!s.romance) {
-      s.romance = { kind, affection: 0, stage: 0, since: s.day };
-      return `${partners[kind].name}를 만났어! 연애 메뉴에서 인사해 줘.`;
-    }
-    s.candidate = kind;
-    return `${partners[kind].name}가 다가왔어. 연애 메뉴에서 갈아타기를 선택할 수 있어.`;
+    if (
+      s.romance ||
+      !["walk", "dungeon", "work", "star", "live"].includes(source) ||
+      r >= 0.05
+    )
+      return null;
+    s.romance = {
+      kind: 0,
+      affection: 0,
+      stage: 0,
+      since: s.day,
+      namePending: true,
+    };
+    log(
+      s,
+      "빗속에서 잊었던 낯익은 치즈냥이를 만났어. 연애 메뉴에서 이름을 지어 줘!",
+    );
+    return "치즈냥이를 만났어! 연애 메뉴에서 이름을 지어 줘.";
+  }
+  function namePartner(s, name) {
+    if (!s.romance?.namePending || typeof name !== "string") return false;
+    name = name.trim();
+    if (!name || [...name].length > 12 || /[\x00-\x1f\x7f]/.test(name))
+      return false;
+    s.romance.name = name;
+    s.romance.namePending = false;
+    log(s, `${name}와 새로운 이야기가 시작됐어.`);
+    return true;
+  }
+  function partnerName(s) {
+    return s.romance?.name || "치즈냥이";
   }
   function affection(s, n) {
     const r = s.romance;
@@ -926,6 +968,7 @@
       s.gold += n;
       s.earned.gold += n;
       s.workDays[i]++;
+      s.promotionDays[i]++;
       report.push(`${jobs[i].name} 일당 +${n} G · 근무 ${s.workDays[i]}일`);
       const event = meet(s, "work");
       if (event) report.push(event);
@@ -940,9 +983,16 @@
         report.push(`${companies[i].name} 거래 정지 중 · 주식 지급 보류`);
         continue;
       }
-      s.stocks[i] = (s.stocks[i] || 0) + 1;
-      s.costBasis.stock[i] = (s.costBasis.stock[i] || 0) + price(s, "stock", i);
-      report.push(`${companies[i].name} 주식 +1주`);
+      const q =
+        Math.floor(
+          ((companies[i].cost * 0.01) / price(s, "stock", i)) * 100 + 1e-8,
+        ) / 100;
+      s.stocks[i] = Math.round(((s.stocks[i] || 0) + q) * 100) / 100;
+      s.costBasis.stock[i] =
+        (s.costBasis.stock[i] || 0) + price(s, "stock", i) * q;
+      report.push(
+        `${companies[i].name} 주식 +${q.toFixed(2)}주 · 회사가의 1% 상당 (소수 둘째 자리까지 지급)`,
+      );
     }
     if (income) {
       s.gold += income;
@@ -1019,7 +1069,7 @@
       const diamonds = 1 + (eventIs(s, 5) && Math.random() < 0.3 ? 1 : 0);
       s.diamonds += diamonds;
       s.earned.diamonds += diamonds;
-      text = `공원산책 · 행복도 +30 · 다이아 +${diamonds}`;
+      text = `공원산책 · 다이아 +${diamonds}`;
     } else if (r < 0.85) {
       const i = s.walks % toys.length;
       s.toyBag[i] = (s.toyBag[i] || 0) + 1;
@@ -1052,7 +1102,7 @@
     if (
       !s.romance ||
       !s.vehicles.some((i) => vehicles[i].type === "car") ||
-      !consume(s, "walk", 1, 25)
+      !consume(s, "drive", 1, 25)
     )
       return null;
     s.walks++;
@@ -1080,7 +1130,7 @@
     return true;
   }
   function enterArcade(s) {
-    if (!consume(s, "walk", 1, 25)) return false;
+    if (!consume(s, "arcade", 1, 25)) return false;
     happy(s, 5);
     s.outingPending = true;
     return true;
@@ -1155,8 +1205,10 @@
     if (
       !["stock", "coin"].includes(type) ||
       !["buy", "sell"].includes(side) ||
-      !Number.isInteger(qty) ||
-      qty < 1 ||
+      !Number.isFinite(qty) ||
+      (type === "stock"
+        ? qty < 0.01 || Math.abs(qty * 100 - Math.round(qty * 100)) > 1e-7
+        : !Number.isInteger(qty) || qty < 1) ||
       qty > 1000
     )
       return false;
@@ -1169,16 +1221,19 @@
       held = book[i] || 0;
     if (side === "buy") {
       if (p <= 0) return false;
-      if (!spend(s, p * qty)) return false;
-      book[i] = held + qty;
-      s.costBasis[type][i] = (s.costBasis[type][i] || 0) + p * qty;
+      const total =
+        type === "stock" ? Math.ceil(p * qty * 1.02 - 1e-8) : p * qty;
+      if (!spend(s, total)) return false;
+      book[i] = Math.round((held + qty) * 100) / 100;
+      s.costBasis[type][i] = (s.costBasis[type][i] || 0) + total;
     } else {
-      if (held < qty) return false;
+      if (held + 1e-8 < qty) return false;
       const cost = ((s.costBasis[type][i] || 0) * qty) / held;
       s.costBasis[type][i] = Math.max(0, (s.costBasis[type][i] || 0) - cost);
-      s.realized[type] += Math.floor(p * qty * 0.96) - cost;
-      book[i] = held - qty;
-      s.gold += Math.floor(p * qty * 0.96);
+      s.realized[type] +=
+        Math.floor(p * qty * (type === "stock" ? 0.98 : 0.96) + 1e-8) - cost;
+      book[i] = Math.max(0, Math.round((held - qty) * 100) / 100);
+      s.gold += Math.floor(p * qty * (type === "stock" ? 0.98 : 0.96) + 1e-8);
     }
     return true;
   }
@@ -1280,9 +1335,12 @@
   function roulette(s, color, bet, r = Math.random()) {
     if (
       !["red", "black", "green"].includes(color) ||
-      !Number.isInteger(bet) ||
+      !Number.isFinite(r) ||
+      r < 0 ||
+      r >= 1 ||
+      !Number.isSafeInteger(bet) ||
       bet < 10 ||
-      bet > 500 ||
+      bet > Math.floor(Number.MAX_SAFE_INTEGER / 100) ||
       !spend(s, bet)
     )
       return null;
@@ -1294,23 +1352,46 @@
     s.earned.gold += payout;
     return { slot, color: result, won, payout, bet };
   }
+  // Outcomes are weighted, not independent equally likely reels. Sum 100%, RTP 90%.
+  const slotTable = [
+    { label: "잭팟 3개", symbol: 6, multiplier: 100, weight: 1 },
+    { label: "777", symbol: 5, multiplier: 20, weight: 20 },
+    { label: "춘배 3개", symbol: 0, multiplier: 10, weight: 50 },
+    { label: "생선 3개", symbol: 1, multiplier: 7, weight: 100 },
+    { label: "츄르 3개", symbol: 2, multiplier: 5, weight: 200 },
+    { label: "참치캔 3개", symbol: 3, multiplier: 4, weight: 100 },
+    { label: "발바닥 3개", symbol: 4, multiplier: 3, weight: 300 },
+    { label: "서로 다른 먹거리 3개", multiplier: 2, weight: 500 },
+    { label: "같은 그림 정확히 2개", multiplier: 1, weight: 4000 },
+    { label: "꽝", multiplier: 0, weight: 4729 },
+  ];
   function slot(s, bet, rolls = [Math.random(), Math.random(), Math.random()]) {
     if (
-      !Number.isInteger(bet) ||
+      !Number.isSafeInteger(bet) ||
       bet < 10 ||
-      bet > 500 ||
+      bet > Math.floor(Number.MAX_SAFE_INTEGER / 100) ||
       rolls.length !== 3 ||
-      rolls.some((r) => r < 0 || r >= 1) ||
+      rolls.some((r) => !Number.isFinite(r) || r < 0 || r >= 1) ||
       !spend(s, bet)
     )
       return null;
-    const symbols = rolls.map((r) => Math.floor(r * 5)),
-      unique = new Set(symbols).size,
-      multiplier = unique === 1 ? 10 : unique === 2 ? 1 : 0,
+    const ticket = Math.floor(rolls[0] * 10000);
+    let sum = 0;
+    const outcome = slotTable.find((o) => ticket < (sum += o.weight));
+    let symbols;
+    if (outcome.symbol !== undefined) symbols = Array(3).fill(outcome.symbol);
+    else if (outcome.multiplier === 2) symbols = [1, 2, 3];
+    else if (outcome.multiplier === 1) {
+      const pair = Math.floor(rolls[1] * 7);
+      symbols = [pair, pair, (pair + 1 + Math.floor(rolls[2] * 6)) % 7];
+    } else symbols = [0, 4, 5];
+    const shift = Math.floor(rolls[2] * 3);
+    symbols = symbols.slice(shift).concat(symbols.slice(0, shift));
+    const multiplier = outcome.multiplier,
       payout = bet * multiplier;
     s.gold += payout;
     s.earned.gold += payout;
-    return { symbols, multiplier, payout };
+    return { symbols, multiplier, payout, label: outcome.label };
   }
   root.PetopiaEngine = {
     calendar,
@@ -1336,6 +1417,9 @@
     coins,
     buildings,
     partners,
+    namePartner,
+    partnerName,
+    slotTable,
     bosses,
     dates,
     normalize,

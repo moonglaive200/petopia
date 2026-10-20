@@ -402,28 +402,44 @@ function renderHex() {
 function renderCasino() {
   const s = player();
   gameShell(
-    `<div class="casino-lobby">${title("JOKER’S CAT CASINO", "춘배 카지노", "조커의남자는 졌지만 영업은 계속됩니다.")}<div class="neon-sign">LUCKY PAWS CLUB ♠</div><div class="destination-grid"><button class="destination" data-casino="slot"><span>🎰</span><h2>냥슬롯</h2><p>그림 3개 · 배당 최대 10배</p></button><button class="destination" data-casino="roulette"><span>◉</span><h2>냥룰렛</h2><p>빨강·검정 2배 / 초록 30배</p></button></div><p class="note">금화 전용 · 최소 10 / 최대 500 G · 배당은 건 금액 포함 총액.<br>카지노는 다이아를 지급하지 않아. 날짜·자산 수입과 별개의 금화 게임이야.</p></div>`,
+    `<div class="casino-lobby">${title("JOKER’S CAT CASINO", "춘배 카지노", "조커의남자는 졌지만 영업은 계속됩니다.")}<div class="neon-sign">LUCKY PAWS CLUB ♠</div><div class="destination-grid"><button class="destination" data-casino="slot"><span>🎰</span><h2>냥슬롯</h2><p>7가지 그림 · 777 20배 / 잭팟 100배</p></button><button class="destination" data-casino="roulette"><span>◉</span><h2>냥룰렛</h2><p>빨강·검정 2배 / 초록 30배</p></button></div><p class="note">금화 전용 · 최소 10 G / 보유 금화까지 자유 배팅 · 배당은 건 금액 포함 총액.<br>카지노는 다이아를 지급하지 않아. 날짜·자산 수입과 별개의 금화 게임이야.</p></div>`,
     renderGambling,
   );
   bind("casino", (id) => (id === "slot" ? renderSlot() : renderRoulette()));
 }
 function betInput() {
-  return '<label class="field-label">베팅 금화<input id="betAmount" type="number" min="10" max="500" step="10" value="10"></label>';
+  return '<label class="field-label">베팅 금화<input id="betAmount" type="number" min="10" step="1" value="10"></label>';
 }
 function getBet() {
   const n = Number(document.querySelector("#betAmount").value);
-  return Number.isInteger(n) && n >= 10 && n <= 500 ? n : null;
+  return Number.isSafeInteger(n) &&
+    n >= 10 &&
+    n <= Math.floor(Number.MAX_SAFE_INTEGER / 100)
+    ? n
+    : null;
 }
+const SLOT_SYMBOLS = [
+  "🐱",
+  "🐟",
+  '<svg class="slot-icon" viewBox="0 0 64 64" role="img" aria-label="츄르"><path d="M19 5H45L41 59H23Z" fill="#f39ac2" stroke="#753b69" stroke-width="3"/><path d="M20 13H44M24 49H40" stroke="#fff0ce" stroke-width="4"/><text x="32" y="37" text-anchor="middle" font-size="18" fill="#613c42">츄</text></svg>',
+  "🥫",
+  "🐾",
+  '<b class="slot-seven">7</b>',
+  '<svg class="slot-icon jackpot-icon" viewBox="0 0 64 64" role="img" aria-label="잭팟"><path d="M5 20L17 30L32 8L47 30L59 20L53 49H11Z" fill="#ffce4c" stroke="#8b4b21" stroke-width="3"/><path d="M13 55H51" stroke="#ffdc68" stroke-width="5"/><text x="32" y="43" text-anchor="middle" font-weight="bold" font-size="20" fill="#9d304e">J</text></svg>',
+];
 function renderSlot() {
   const s = player();
   gameShell(
-    `<div class="casino-lobby">${title("THREE LITTLE TROUBLEMAKERS", "냥슬롯", "츄르·생선·춘배·발바닥. 오늘의 운을 뽑아 보자.")}<div class="slot-reels" aria-live="polite"><span>🐱</span><span>🐟</span><span>🐾</span></div>${betInput()}<p>같은 그림 3개: 10배 · 2개: 원금 반환 · 나머지: 꽝</p><button class="btn primary wide" id="spinSlot">돌리기</button><p id="slotResult" class="game-notice" role="status">집사가 번 돈이다. 신중하게 냥.</p></div>`,
+    `<div class="casino-lobby">${title("THREE LITTLE TROUBLEMAKERS", "냥슬롯", "먹거리부터 777, 황금 왕관 잭팟까지! 오늘의 운을 뽑아 보자.")}<div class="slot-reels" aria-live="polite"><span>🐱</span><span>🐟</span><span>🐾</span></div>${betInput()}<p>777: 20배 · 황금 왕관 3개: 100배 잭팟!<br>같은 그림 정확히 2개는 원금 반환 · 배당은 원금 포함</p><details class="slot-odds"><summary>배당·확률표 · 평균 환급률 90%</summary><table><thead><tr><th>조합</th><th>배당</th><th>확률</th></tr></thead><tbody>${E.slotTable.map((o) => `<tr><td>${o.label}</td><td>${o.multiplier}배</td><td>${(o.weight / 100).toFixed(2)}%</td></tr>`).join("")}</tbody></table><p>결과별 가중 확률 · 매 판 독립 추첨 · 당첨 횟수 보장 없음</p></details><button class="btn primary wide" id="spinSlot">돌리기</button><p id="slotResult" class="game-notice" role="status">집사가 번 돈이다. 신중하게 냥.</p></div>`,
     renderCasino,
   );
   document.querySelector("#spinSlot").onclick = () => {
+    document
+      .querySelector(".slot-reels")
+      ?.classList.remove("mega-jackpot", "lucky-seven");
     const bet = getBet();
     if (!bet) {
-      notice("베팅은 10~500 G, 가진 금화 안에서 골라줘.");
+      notice("베팅은 10 G 이상 정수로, 가진 금화 안에서 골라줘.");
       return;
     }
     const outcome = E.slot(s, bet);
@@ -431,7 +447,7 @@ function renderSlot() {
       notice("금화가 부족해.");
       return;
     }
-    const symbols = ["🐱", "🐟", "🐾", "▰", "🧶"],
+    const symbols = SLOT_SYMBOLS,
       result = outcome.symbols,
       multiplier = outcome.multiplier,
       payout = outcome.payout;
@@ -444,9 +460,9 @@ function renderSlot() {
         .querySelectorAll(".slot-reels span")
         .forEach(
           (el, i) =>
-            (el.textContent =
+            (el.innerHTML =
               ticks < 10
-                ? symbols[Math.floor(Math.random() * 5)]
+                ? symbols[Math.floor(Math.random() * symbols.length)]
                 : symbols[result[i]]),
         );
       ticks++;
@@ -459,7 +475,13 @@ function renderSlot() {
         document.querySelector(".wallet span").textContent =
           `◈ ${money(s.gold)} G`;
         completeOuting();
-        if (payout) meow();
+        if (multiplier >= 20) {
+          const reels = document.querySelector(".slot-reels");
+          reels.classList.add(
+            multiplier === 100 ? "mega-jackpot" : "lucky-seven",
+          );
+          playEffect("victory");
+        } else if (payout) meow();
       }
     }, 90);
     setCleanup(() => clearInterval(timer));
@@ -488,9 +510,12 @@ function renderRoulette() {
     b.classList.add("selected");
   });
   document.querySelector("#spinRoulette").onclick = () => {
+    document
+      .querySelector(".slot-reels")
+      ?.classList.remove("mega-jackpot", "lucky-seven");
     const bet = getBet();
     if (!bet) {
-      notice("10~500 사이 정수 금액을 골라줘.");
+      notice("10 G 이상 정수 금액을 골라줘.");
       return;
     }
     const result = E.roulette(s, color, bet);

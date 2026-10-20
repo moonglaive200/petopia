@@ -4631,3 +4631,244 @@ dialog {
 .studio-stars {
   pointer-events: none;
 }
+/* v0.6: story, weighted reels and home-only utility controls */
+.story-scene {
+  min-height: 300px;
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+}
+.story-scene .story-cats {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 3;
+}
+.story-scene .story-cats .cat-sprite {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+}
+.story-rain .story-cats,
+.story-dawn .story-cats {
+  justify-content: center;
+}
+.story-rain {
+  background: linear-gradient(#172c3f, #263c43 65%, #182b2c);
+}
+.story-rain .intro-sun {
+  display: none;
+}
+.story-rain .intro-tree {
+  filter: brightness(0.55);
+}
+.story-rain .story-cats {
+  filter: saturate(0.6) brightness(0.85);
+}
+.story-rain .rain-layer {
+  opacity: 0.9;
+  z-index: 5;
+}
+.story-battle,
+.story-demon,
+.story-curse,
+.story-flight {
+  background: radial-gradient(
+    ellipse at 50% 70%,
+    #8e4564,
+    #28213b 65%,
+    #141322
+  );
+}
+.dark-castle {
+  position: absolute;
+  font-size: 240px;
+  color: #111120;
+  left: 35%;
+  top: -60px;
+  opacity: 0.7;
+}
+.demon-king {
+  position: absolute;
+  top: 12px;
+  left: calc(50% - 55px);
+  width: 110px;
+  height: 165px;
+  background: linear-gradient(#302235, #100f1e);
+  clip-path: polygon(
+    0 0,
+    25% 25%,
+    50% 12%,
+    75% 25%,
+    100% 0,
+    90% 60%,
+    100% 100%,
+    0 100%,
+    10% 60%
+  );
+  color: #ff6b80;
+  display: grid;
+  text-align: center;
+  align-content: center;
+  font-size: 45px;
+  filter: drop-shadow(0 0 12px #f45);
+}
+.demon-king span {
+  font-size: 28px;
+}
+.story-demon .demon-king {
+  animation: demon-arrival 0.7s ease-out both;
+}
+.curse-rings {
+  position: absolute;
+  inset: 18% 25%;
+  border: 4px solid #d789ff;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.story-curse .curse-rings {
+  opacity: 0.8;
+  box-shadow:
+    0 0 30px #d174ff,
+    inset 0 0 30px #d174ff;
+  animation: curse-pulse 1.5s infinite;
+}
+.story-curse .story-cats {
+  filter: grayscale(1);
+}
+.story-flight .story-cats .chunbae-sprite {
+  animation: story-fly-left 1s ease-in both;
+}
+.story-flight .story-cheese {
+  animation: story-fly-right 1s ease-in both;
+}
+.intro-dialogue #introLine {
+  min-height: 5em;
+  line-height: 1.95;
+}
+.intro-actions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.meeting-cats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+}
+.meeting-speaker {
+  color: #82502d;
+  font-weight: bold;
+}
+#partnerName {
+  width: 100%;
+}
+#partnerNameError {
+  color: #a32e36;
+}
+.slot-icon {
+  width: 64px;
+  height: 64px;
+  vertical-align: middle;
+}
+.slot-seven {
+  color: #ff535c;
+  font-size: 64px;
+  font-weight: 900;
+  text-shadow:
+    2px 2px #fff1ab,
+    4px 4px #8d263f;
+}
+.slot-odds {
+  margin: 16px 0;
+}
+.slot-odds table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 12px;
+}
+.slot-odds th,
+.slot-odds td {
+  padding: 8px 4px;
+  border-bottom: 1px solid #b99d6d55;
+  text-align: left;
+}
+.mega-jackpot {
+  box-shadow: 0 0 24px #ffe474;
+  animation: jackpot-flash 0.5s alternate 8;
+}
+.lucky-seven {
+  box-shadow: 0 0 18px #ff818b;
+}
+@keyframes jackpot-flash {
+  to {
+    filter: brightness(1.7);
+    transform: scale(1.02);
+  }
+}
+@keyframes demon-arrival {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(1.5);
+  }
+}
+@keyframes curse-pulse {
+  50% {
+    transform: scale(1.3);
+    opacity: 0.2;
+  }
+}
+@keyframes story-fly-left {
+  to {
+    transform: translate(-400px, -160px) rotate(-110deg);
+    opacity: 0;
+  }
+}
+@keyframes story-fly-right {
+  to {
+    transform: translate(400px, -160px) rotate(110deg);
+    opacity: 0;
+  }
+}
+.still .story-scene *,
+.still .mega-jackpot {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .story-scene *,
+  .mega-jackpot {
+    animation: none !important;
+  }
+}
+@media (max-width: 600px) {
+  .story-scene {
+    min-height: 240px;
+  }
+  .story-scene .cat-sprite {
+    width: 110px;
+    height: 110px;
+  }
+  .slot-icon {
+    width: 45px;
+    height: 45px;
+  }
+  .slot-seven {
+    font-size: 45px;
+  }
+}
+.story-rain .rain-layer {
+  display: block;
+  background: repeating-linear-gradient(
+    105deg,
+    transparent 0 35px,
+    #c8e7ff66 36px 38px,
+    transparent 39px 65px
+  );
+  animation: rain-fall 0.5s linear infinite;
+}

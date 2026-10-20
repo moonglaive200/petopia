@@ -6,20 +6,23 @@ with sync_playwright() as p:
  def home():
   page.reload(wait_until='domcontentloaded');page.locator('#start').click();page.locator('[data-slot="0"]').click()
  def seed(**values):
-  s=state();s.update({'event':None,'eventDay':s['day'],'weather':'sun'});s.update(values);page.evaluate('(s)=>localStorage.setItem("petopia.slots",JSON.stringify([s]))',s);home()
+  s=state();s.update({'event':None,'eventDay':s['day'],'weather':'sun'});s.update(values);
+  if s.get('romance'):s['romance']['name']='치즈'
+  page.evaluate('(s)=>localStorage.setItem("petopia.slots",JSON.stringify([s]))',s);home()
  def menu(key):
   if key=="inventory":page.locator('[data-utility="inventory"]').click()
   else:page.locator(f'[data-menu="{key}"]').click()
  def utility(key):
   if key in ["mart","bank"]:home();menu(key)
-  else:page.locator(f'[data-utility="{key}"]').click()
+  else:home();page.locator(f'[data-utility="{key}"]').click()
  def back():page.locator('#gameBack').click()
  def close_modal():
   page.locator('dialog .btn').click();page.wait_for_timeout(100)
+ page.add_init_script('Math.random=()=>.9')
  page.goto('http://127.0.0.1:8000',wait_until='networkidle');page.locator('#start').click();assert page.locator('.slot').count()==3
  page.locator('[data-slot="0"]').click();page.locator('#ownerName').fill('승식');page.locator('#ownerNext').click();assert page.locator('.character:disabled').count()==1;page.locator('#chunbae').click()
- assert page.locator('.intro-panel .shivering').is_visible()
- for _ in range(6):page.locator('#nextIntro').click()
+ assert page.locator('.story-battle').is_visible()
+ for _ in range(14):page.locator('#nextIntro').click()
  assert state()['introSeen'];assert page.locator('[data-menu]').count()==8;assert page.locator('.game-top #dayButton').count()==0
  menu('influencer');assert state()['energy']==100;page.locator('[data-social="star"]').click();assert state()['energy']==100
  page.evaluate('Math.random=()=>.9');page.locator('#postStar').click();assert state()['energy']==75;assert state()['daily']['star']==1;assert page.locator('#postStar').is_disabled()
@@ -47,13 +50,14 @@ with sync_playwright() as p:
  menu('romance');page.evaluate('()=>{Math.random=()=>0;}');page.locator('#propose').click();close_modal();assert state()['romance']['stage']==2;assert state()['diamonds']==25
  home();assert page.locator('.home-cats .cat-sprite').count()==2
  seed(energy=100,romance={'kind':2,'affection':10,'stage':3,'since':1});menu('romance');assert page.locator('#breakUp').count()==0;assert page.locator('#switchPartner').count()==0
- seed(energy=100,romance={'kind':0,'affection':2,'stage':0,'since':1},candidate=2);menu('romance');page.locator('#switchPartner').click();assert state()['romance']['affection']==0;assert state()['romance']['kind']==2;page.locator('#breakUp').click();assert state()['romance'] is None
+ seed(energy=100,romance={'kind':0,'affection':2,'stage':0,'since':1},candidate=2);menu('romance');assert page.locator('#switchPartner').count()==0;page.locator('#breakUp').click();assert state()['romance'] is None
  # Finance, company daily share and medical energy invariance.
- seed(house=0,companies=[],buildings=[],romance=None,gold=1000000,energy=25,workDays=[2,0,0],employees=[],workLevels=[1,1,1],staffLevels=[1,1,1])
+ seed(house=0,companies=[],buildings=[],romance=None,gold=1000000,energy=25,workDays=[2,0,0],promotionVersion=1,promotionDays=[1,0,0],employees=[],workLevels=[1,1,1],staffLevels=[1,1,1])
  utility('bank');page.locator('[data-bank="spend"]').click();page.locator('[data-invest="coin"]').click();assert '200%' in page.locator('.desc').inner_text();back();page.locator('[data-invest="stock"]').click();assert '30%' in page.locator('.desc').inner_text();page.locator('[data-trade="0:buy"]').click();assert state()['stocks']['0']==1
  back();page.locator('[data-invest="company"]').click();page.locator('[data-buy="company:0"]').click();assert 0 in state()['companies']
  home();menu('work');page.locator('[data-promote="owner:0"]').click();assert state()['workLevels'][0]==2;page.locator('[data-hire="0"]').click();assert 0 in state()['employees'];page.locator('[data-promote="staff:0"]').click();assert state()['staffLevels'][0]==2
- home();page.locator('#dayButton').click();close_modal();assert state()['stocks']['0']==2;assert state()['lastDayDelta']['gold']>0;page.locator('#startNewDay').click()
+ expected=1+int(9000/page.evaluate('E.price(player(),"stock",0)')*100+1e-8)/100
+ home();page.locator('#dayButton').click();close_modal();assert abs(state()['stocks']['0']-expected)<1e-8,(state()['stocks'],expected,state()['dayReport']);assert state()['lastDayDelta']['gold']>0;page.locator('#startNewDay').click()
  seed(hospital=True,gold=0,energy=7,happiness=0);utility('hospital');page.locator('#healPet').click();assert not state()['hospital'];assert state()['energy']==7;assert state()['loans']
  # Arcade consumes the outing's 25 only; all prior games still load.
  seed(hospital=False,energy=100,gold=10000,happiness=80,bossCleared=True,daily={'walk':0,'dungeon':0,'star':0,'influence':0,'work':0,'feed':0,'gift':0,'talk':0,'date':0})
@@ -71,5 +75,5 @@ with sync_playwright() as p:
  for key in ['mart','bank','hospital']:
   utility(key);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),key;back()
  assert not errors,errors
- print('PASS: real new-game intro, eight menus, shared influencer cost, animated Live choices, work freedom/cutscene, day report, finite stock/toys/vehicles, romance gifts/confession/marriage/switch/permanence, prices/income, hospital energy, arcade/HEX, survival/pause/rewards, mobile; no JS errors')
+ print('PASS: real new-game intro, eight menus, shared influencer cost, animated Live choices, work freedom/cutscene, day report, finite stock/toys/vehicles, romance gifts/confession/marriage/cheese-only/permanence, prices/income, hospital energy, arcade/HEX, survival/pause/rewards, mobile; no JS errors')
  b.close()
