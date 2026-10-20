@@ -40,6 +40,7 @@ function gameShell(content, back = renderHome) {
   const s = player();
   document.body.dataset.screen = "game";
   app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label">SLOT 0${selectedSlot + 1}</span><button class="day-button" id="dayButton">☾ DAY ${s.day} · 잠자기</button><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>ϟ ${s.energy}</span></div></div>${content}</section>`;
+  if (s.ownerName) document.querySelector(".save-label").textContent = `SLOT 0${selectedSlot + 1} · 집사 ${s.ownerName}`;
   document.querySelector("#gameBack").onclick = () => {
     if (leaveGame()) back();
   };

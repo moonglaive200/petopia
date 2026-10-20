@@ -13,7 +13,7 @@ Use a browser on the server address, or publish the repository's `main` branch r
 
 ## Main loop
 
-Choose one of three independent slots, then 춘배. 오레오 is locked as under development. 춘배 appears above nine activity menus. The information bar shows level, attack/defense, happiness, fame, gold and diamonds.
+Choose one of three independent slots, enter a 1–12 character owner name, then choose 춘배. Names are saved per slot; existing saves continue directly. 오레오 is locked as under development. 춘배 appears above nine activity menus. The information bar shows level, attack/defense, happiness, fame, gold and diamonds.
 
 **Sleep** advances the in-game day; real-world time does not advance days. A new day restores energy to 100, lowers happiness by 8, pays jobs and assets, and settles due loans. Daily limits: Petstar 1 post, Live once every 3 days, walks 2 outings, dungeons 5 entries (normal and boss combined). Arcade/casino entry uses one outing; several games can be played during that visit. Activity restrictions and all results are saved immediately.
 

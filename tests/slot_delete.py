@@ -14,6 +14,8 @@ with sync_playwright() as p:
     assert page.locator('[data-delete-slot]').count()==0
     for i in [0,1]:
         page.locator(f'[data-slot="{i}"]').click()
+        page.locator("#ownerName").fill(f"집사{i + 1}")
+        page.locator("#ownerNext").click()
         page.wait_for_function('document.querySelector("#chunbaeArt").complete && document.querySelector("#chunbaeArt").naturalWidth > 0')
         assert page.locator('#chunbaeArt').get_attribute('src')=='assets/chunbae-base-preview.png'
         page.locator('#chunbae').click()
@@ -44,7 +46,7 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded');page.locator('#start').click()
     assert '비어 있는 슬롯' in page.locator('[data-slot="0"]').inner_text()
     assert '춘배의 일상' in page.locator('[data-slot="1"]').inner_text()
-    page.locator('[data-slot="0"]').click();page.locator('#chunbae').click()
+    page.locator('[data-slot="0"]').click();page.locator("#ownerName").fill("새집사");page.locator("#ownerNext").click();page.locator('#chunbae').click()
     assert page.evaluate('JSON.parse(localStorage.getItem("petopia.slots"))[0]') is not None
     page.locator('#gameBack').click()
     page.set_viewport_size({'width':390,'height':844})

@@ -19,7 +19,8 @@ with sync_playwright() as p:
     assert page.locator('.logo').inner_text()=='PETOPIA'
     assert page.evaluate('document.fonts.check("16px Neo")')
     page.locator('#start').click();assert page.locator('.slot').count()==3
-    page.locator('.slot').first.click();assert page.locator('.character:disabled').count()==1
+    page.locator('.slot').first.click()
+    page.locator('#ownerName').fill('승식');page.locator('#ownerNext').click();assert page.locator('.character:disabled').count()==1
     page.locator('#chunbae').click();assert page.locator('[data-menu]').count()==9
     page.screenshot(path='/tmp/petopia-v2-home.png',full_page=True)
     menu('star');page.locator('#postStar').click();assert state()['daily']['star']==1;assert page.locator('#postStar').is_disabled();assert state()['liveFollowers']>0
