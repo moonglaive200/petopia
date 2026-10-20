@@ -71,3 +71,5 @@ The following files are copied unchanged from this conversation's uploads, and a
 | `assets/purchase.mp3`        | 동전소리*구매하다*팔다\_1.mp3 | Successful paid purchases and stock/coin buys |
 
 Other weapon effects remain synthesized, with their gain increased independently of UI/other effects. Native audio loops stop on scene cleanup and respect mute; stage music pauses during pause/upgrade selection. Default attack samples have bounded overlap. Per-direction atlas bounds fix uneven artwork spacing without editing the original image. Only the cheese row of the existing companion art is used. Slot crown jackpot and treat icons are locally authored inline SVG.
+
+- `assets/enhance-charge.mp3`: user-supplied `강화소리 2번.mp3`, copied unchanged (1.069 seconds). Plays before revealing an enhancement result; the success/destruction sound follows its ended event. Muted or blocked playback uses a matching-duration fallback.

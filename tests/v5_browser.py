@@ -21,7 +21,7 @@ with sync_playwright() as p:
  # Chance upgrade, hold, destruction and removal of old guaranteed button.
  seed(gold=10000,weapon=1,weapons=[0,1],armor=1,armors=[0,1]);menu('mart');assert page.locator('[data-upgrade]').count()==0;home();menu('gambling');page.locator('#openEnhance').click();assert '18 G' in page.locator('#tryEnhance').inner_text()
  for roll,outcome in [(0,'success'),(.95,'hold'),(.99,'destroy')]:
-  page.evaluate('(r)=>Math.random=()=>r',roll);page.locator('#tryEnhance').click();assert page.locator(f'.enhance-result.{outcome}').is_visible();close()
+  page.evaluate('(r)=>Math.random=()=>r',roll);page.locator('#tryEnhance').click();page.locator(f'.enhance-result.{outcome}').wait_for(state='visible');assert page.locator(f'.enhance-result.{outcome}').is_visible();close()
  assert state()['weapon']==0;assert 1 not in state()['weapons'];assert state()['armors']==[0,1];assert page.locator('#tryEnhance').is_disabled()
  # Romance action cost is real, menu free; feeding own pet still free.
  seed(gold=10000,diamonds=10,romance={'kind':0,'stage':0,'affection':3},toys=[0],toyBag={'0':1});menu('romance');assert state()['energy']==100;page.locator('#talkPartner').click();assert state()['energy']==75;page.evaluate('Math.random=()=>0');page.locator('#confess').click();close();assert state()['energy']==50;page.locator('[data-date="0"]').click();close();assert state()['energy']==25;page.locator('[data-give-toy="0"]').click();assert state()['energy']==0;assert page.locator('#breakUp').is_disabled();home();page.locator('[data-utility="inventory"]').click();page.locator('[data-feed="0"]').click();assert state()['energy']==0

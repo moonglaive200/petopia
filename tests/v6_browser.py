@@ -49,7 +49,7 @@ with sync_playwright() as p:
  # Exact uploaded enhancement samples, no success/break sample on hold.
  seed(gold=100000,weapon=1,weapons=[0,1]);menu('gambling');page.locator('#openEnhance').click()
  for roll,result,sample in [(0,'success','enhance-success'),(.95,'hold',None),(.99,'destroy','enhance-break')]:
-  page.wait_for_timeout(150);page.evaluate('(r)=>{Math.random=()=>r;played.length=0}',roll);page.locator('#tryEnhance').click();assert page.locator(f'.enhance-result.{result}').is_visible()
+  page.wait_for_timeout(150);page.evaluate('(r)=>{Math.random=()=>r;played.length=0}',roll);page.locator('#tryEnhance').click();page.locator(f'.enhance-result.{result}').wait_for(state='visible');assert page.locator(f'.enhance-result.{result}').is_visible()
   if sample:assert played(sample)
   else:assert not played('enhance-success') and not played('enhance-break')
   close()

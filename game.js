@@ -318,23 +318,64 @@ function renderEnhance(type = "weapon") {
     renderEnhance(type);
   };
   document.querySelector("#tryEnhance").onclick = () => {
+    if (activeActivity) return;
     const result = E.enhance(s, type);
     if (!result) return;
+    // Commit the roll once before presentation: leaving/reloading cannot reroll it.
     save();
-    renderEnhance(type);
-    if (result.outcome !== "hold")
-      playEffect(
-        result.outcome === "success" ? "enhance-success" : "enhance-break",
+    activeActivity = true;
+    document
+      .querySelectorAll(".game-shell button, .game-shell select")
+      .forEach((el) => {
+        el.disabled = true;
+      });
+    const anvil = document.querySelector(".enhance-anvil");
+    anvil.classList.add("enhance-charging");
+    anvil.setAttribute("aria-live", "polite");
+    anvil.querySelector("span").textContent = "두근두근… 강화 중!";
+    document.querySelector("#tryEnhance").textContent =
+      "강화 중… 결과를 기다려 줘!";
+    const charge = playMedia("enhance-charge", 0.7),
+      started = performance.now();
+    let finished = false,
+      timer;
+    const cancel = () => {
+      finished = true;
+      clearInterval(timer);
+      charge.audio.removeEventListener("ended", reveal);
+      charge.stop();
+    };
+    function reveal() {
+      if (finished) return;
+      cancel();
+      activeActivity = false;
+      renderEnhance(type);
+      if (result.outcome !== "hold")
+        playEffect(
+          result.outcome === "success" ? "enhance-success" : "enhance-break",
+        );
+      catVoice(result.outcome === "success" ? "happy" : "complain");
+      showModal(
+        result.outcome === "success"
+          ? "강화 성공!"
+          : result.outcome === "hold"
+            ? "강화 유지…"
+            : "장비가 파괴됐어…",
+        `<div class="enhance-result ${result.outcome}">${result.outcome === "success" ? "✦" : "…"}</div><p>${result.name} +${result.target} 도전 · 비용 ${money(result.cost)} G<br>${result.outcome === "success" ? `+${result.target} 달성!` : result.outcome === "hold" ? "단계는 그대로 유지돼." : "해당 장비가 사라졌어. 기본 장비로 교체했어."}</p>`,
       );
-    catVoice(result.outcome === "success" ? "happy" : "complain");
-    showModal(
-      result.outcome === "success"
-        ? "강화 성공!"
-        : result.outcome === "hold"
-          ? "강화 유지…"
-          : "장비가 파괴됐어…",
-      `<div class="enhance-result ${result.outcome}">${result.outcome === "success" ? "✦" : "…"}</div><p>${result.name} +${result.target} 도전 · 비용 ${money(result.cost)} G<br>${result.outcome === "success" ? `+${result.target} 달성!` : result.outcome === "hold" ? "단계는 그대로 유지돼." : "해당 장비가 사라졌어. 기본 장비로 교체했어."}</p>`,
-    );
+    }
+    charge.audio.addEventListener("ended", reveal);
+    // Muted/blocked/failed playback keeps the same suspense duration (clip: 1.069s).
+    timer = setInterval(() => {
+      const elapsed = performance.now() - started;
+      if (
+        (elapsed >= 1100 &&
+          (!sound || charge.audio.paused || charge.audio.error)) ||
+        elapsed >= 12000
+      )
+        reveal();
+    }, 50);
+    setCleanup(cancel);
   };
 }
 function completeOuting() {
