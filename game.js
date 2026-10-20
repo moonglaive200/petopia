@@ -58,7 +58,7 @@ function guidePanel() {
     s.guideDay = s.day;
     s.guideTip = Math.floor(Math.random() * GUIDE_TIPS.length);
   }
-  return `<div class="game-notice guide-panel"><p id="guideText">가이드: ${GUIDE_TIPS[s.guideTip] || GUIDE_TIPS[0]}</p><small>오늘의 랜덤 가이드 · 다음 날 새로 뽑아</small></div>`;
+  return `<div class="game-notice guide-panel"><p id="guideText">가이드: ${GUIDE_TIPS[s.guideTip] || GUIDE_TIPS[0]}</p></div>`;
 }
 function statusText(s) {
   return s.hospital

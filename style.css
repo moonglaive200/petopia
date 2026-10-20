@@ -3870,14 +3870,17 @@ dialog {
   height: 100px;
 }
 .raining:after {
-  content: "☂ 비 오는 날";
+  content: "비 오는 날";
   position: absolute;
-  right: 14px;
-  top: 12px;
-  background: #25354bdc;
-  color: #e7efff;
-  padding: 8px;
-  border-radius: 5px;
+  inset: 14px auto auto 14px;
+  width: max-content;
+  height: auto;
+  background: none;
+  color: #fff;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  text-shadow: 0 1px 3px #0009;
   z-index: 4;
 }
 @keyframes rain-fall {
