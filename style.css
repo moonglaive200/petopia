@@ -3552,8 +3552,12 @@ dialog {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
-.stats-six > div {
+.status-strip.stats-six > div {
   background: #fff0d4;
   border: 2px solid #bd9565;
   border-radius: 10px;
@@ -3951,4 +3955,21 @@ dialog {
 }
 .daily-strip {
   margin-top: 14px;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  text-align: center;
+  font-weight: bold;
+  padding: 12px 0 8px;
+}
+.calendar-grid .sunday,
+.calendar-weekdays .sunday {
+  color: #ac3933;
+}
+.calendar-grid .saturday,
+.calendar-weekdays .saturday {
+  color: #3268a4;
 }

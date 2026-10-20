@@ -433,8 +433,18 @@ test("all three maps run through 1-minute/3-minute boss events and clear by comb
   }
 });
 test("calendar, fame, mood and multiplicative bonuses", () => {
-  assert.deepEqual(E.calendar(112), { year: 1, season: "WINTER", date: 28 });
-  assert.deepEqual(E.calendar(113), { year: 2, season: "SPRING", date: 1 });
+  assert.deepEqual(E.calendar(112), {
+    year: 1,
+    season: "WINTER",
+    date: 28,
+    weekday: "토",
+  });
+  assert.deepEqual(E.calendar(113), {
+    year: 2,
+    season: "SPRING",
+    date: 1,
+    weekday: "일",
+  });
   const s = fresh({
     followers: 5000,
     happiness: 100,
@@ -522,4 +532,16 @@ test("rain stays across reload, hospital mood30, and event choices settle once",
   assert.equal(s.happiness, 30);
   assert.equal(s.energy, 0);
 });
+
+test("survival happiness threshold is enforced without spending failed entry resources", () => {
+  const s = fresh({ happiness: 19 });
+  assert.equal(E.consume(s, "dungeon", 1, 50), false);
+  assert.equal(s.energy, 100);
+  assert.equal(s.daily.dungeon, 0);
+  s.happiness = 20;
+  assert.ok(E.consume(s, "dungeon", 1, 50));
+  assert.equal(s.energy, 50);
+  assert.equal(s.daily.dungeon, 1);
+});
+
 console.log(`PASS ${count} v4 scenario groups`);

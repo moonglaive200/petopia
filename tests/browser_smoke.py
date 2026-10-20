@@ -25,7 +25,7 @@ with sync_playwright() as p:
  page.locator('[data-choice="0"]').click();page.wait_for_timeout(1700);close_modal();assert state()['lastLive']['gold']>0
  home();menu('work');page.locator('[data-job="0"]').click();assert page.locator('.scene-construction').is_visible();close_modal();assert state()['energy']==25;assert state()['working']==0
  back();assert page.locator('[data-menu="walk"]').is_enabled();menu('walk');page.locator('[data-dest="park"]').click();close_modal();assert state()['energy']==0;assert state()['daily']['walk']==1;assert page.locator('[data-dest="park"]').is_disabled()
- back();page.locator('#dayButton').click();assert page.locator('.scene-sleep').is_visible();close_modal();page.get_by_role('heading',name='SPRING 2',exact=True).wait_for(state='visible');assert page.locator('.day-deltas>div').count()==4;assert state()['energy']==100;assert state()['working'] is None;assert state()['workDays'][0]==1
+ back();page.locator('#dayButton').click();assert page.locator('.scene-sleep').is_visible();close_modal();page.get_by_role('heading',name='SPRING 2 (월)',exact=True).wait_for(state='visible');assert page.locator('.day-deltas>div').count()==4;assert state()['energy']==100;assert state()['working'] is None;assert state()['workDays'][0]==1
  page.locator('#startNewDay').click()
  # Price changes, finite stock and repeatable toy inventory.
  seed(gold=1000000,diamonds=100,treatStock=[1,1,1],stockDay=2,hospital=False,happiness=80)

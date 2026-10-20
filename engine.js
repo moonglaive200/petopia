@@ -427,11 +427,12 @@
       year: Math.floor(n / 112) + 1,
       season: ["SPRING", "SUMMER", "FALL", "WINTER"][Math.floor(n / 28) % 4],
       date: (n % 28) + 1,
+      weekday: ["일", "월", "화", "수", "목", "금", "토"][n % 7],
     };
   }
   function dateLabel(day) {
     const c = calendar(day);
-    return `${c.year}년 ${c.season} ${c.date}일`;
+    return `${c.year}년 ${c.season} ${c.date}일 (${c.weekday})`;
   }
   function log(s, text) {
     s.logs.push({ day: s.day, text: String(text) });
@@ -534,7 +535,13 @@
     return !s.hospital && !s.expedition && !s.arcadeSession;
   }
   function consume(s, key, limit, energy) {
-    if (!canAct(s) || s.daily[key] >= limit || s.energy < energy) return false;
+    if (
+      !canAct(s) ||
+      s.daily[key] >= limit ||
+      s.energy < energy ||
+      (key === "dungeon" && s.happiness < 20)
+    )
+      return false;
     s.daily[key]++;
     s.energy -= energy;
     log(
