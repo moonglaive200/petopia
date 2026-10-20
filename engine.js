@@ -891,10 +891,9 @@
       !treats[i] ||
       s.treats[i] <= 0 ||
       s.daily[gift ? "gift" : "feed"] >= 1 ||
-      (gift && (!s.romance || s.energy < 25))
+      (gift && !s.romance)
     )
       return false;
-    if (gift) s.energy -= 25;
     s.treats[i]--;
     s.daily[gift ? "gift" : "feed"]++;
     if (gift)
@@ -903,15 +902,8 @@
     return true;
   }
   function giftToy(s, i) {
-    if (
-      !canAct(s) ||
-      s.energy < 25 ||
-      !s.romance ||
-      !s.toyBag[i] ||
-      s.daily.gift >= 1
-    )
+    if (!canAct(s) || !s.romance || !s.toyBag[i] || s.daily.gift >= 1)
       return false;
-    s.energy -= 25;
     s.toyBag[i]--;
     if (!s.toyBag[i]) s.toys = s.toys.filter((n) => n !== i);
     s.daily.gift++;

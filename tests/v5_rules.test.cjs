@@ -10,8 +10,8 @@ test('upgrade costs and probability boundaries, holds and destruction are atomic
  }
  const s=fresh({gold:17,weapon:1,weapons:[0,1]});assert.equal(E.enhance(s,'weapon',0),null);assert.equal(s.gold,17);s.gold=100;s.weaponUp=20;s.gearUp.weapon[1]=20;assert.equal(E.enhance(s,'weapon',0),null);assert.equal(E.enhance(fresh(),'weapon',0),null);
 });
-test('romance entry is free, each executed action costs25, failed preconditions cost nothing',()=>{
- const s=fresh({gold:10000,diamonds:10,romance:{kind:0,stage:0,affection:0},toys:[0],toyBag:{0:1}});E.normalize(s);assert.equal(s.energy,100);assert.ok(E.talk(s));assert.equal(s.energy,75);assert.equal(E.talk(s),false);assert.equal(s.energy,75);assert.ok(E.date(s,0));assert.equal(s.energy,50);assert.ok(E.feedTreat(s,0,true));assert.equal(s.energy,25);assert.ok(E.feedTreat(s,0));assert.equal(s.energy,25);s.daily.gift=0;assert.ok(E.giftToy(s,0));assert.equal(s.energy,0);s.daily.talk=0;assert.equal(E.talk(s),false);assert.equal(s.energy,0);
+test('romance entry is free, gifts cost zero and other actions cost25, failed preconditions cost nothing',()=>{
+ const s=fresh({gold:10000,diamonds:10,romance:{kind:0,stage:0,affection:0},toys:[0],toyBag:{0:1}});E.normalize(s);assert.equal(s.energy,100);assert.ok(E.talk(s));assert.equal(s.energy,75);assert.equal(E.talk(s),false);assert.equal(s.energy,75);assert.ok(E.date(s,0));assert.equal(s.energy,50);assert.ok(E.feedTreat(s,0,true));assert.equal(s.energy,50);assert.ok(E.feedTreat(s,0));assert.equal(s.energy,50);s.daily.gift=0;assert.ok(E.giftToy(s,0));assert.equal(s.energy,50);s.energy=0;s.daily.talk=0;assert.equal(E.talk(s),false);assert.equal(s.energy,0);
  const c=fresh({diamonds:5,romance:{kind:0,stage:0,affection:3}});assert.equal(E.confess(c,false,.9),false);assert.equal(c.energy,75);assert.equal(c.diamonds,4);assert.equal(c.romance.affection,3);
 });
 test('healing weekend nap separate from outing, rain blocks park, drive/park30 and arcade5',()=>{
