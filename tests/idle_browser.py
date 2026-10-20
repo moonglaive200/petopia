@@ -20,7 +20,7 @@ try:
   def home():page.evaluate('renderHome()')
   def close():page.locator('dialog .btn').click()
   seed(energy=0)
-  keys=page.locator('[data-menu]').evaluate_all('(els)=>els.map(e=>e.dataset.menu)');assert keys==['dungeon','romance','idle','walk','work','influencer','gambling','bank'],keys
+  keys=page.locator('[data-menu]').evaluate_all('(els)=>els.map(e=>e.dataset.menu)');assert keys==['dungeon','romance','idle','influencer','work','walk','gambling','bank'],keys
   assert page.locator('[data-menu="mart"]').count()==0;assert page.locator('.screen-tools button').count()==5;page.locator('[data-utility="mart"]').click();assert page.locator('h1').inner_text()=='펫마트';assert page.locator('.screen-tools').count()==0;home()
   page.locator('[data-menu="idle"]').click();assert page.locator('#idleCanvas').is_visible();assert page.locator('.screen-tools').count()==0;assert page.locator('[data-idle-zone]:disabled').count()==2;assert page.locator('#idleStart').is_enabled();page.locator('#idleStart').click();assert state()['idleHunt']['running'];assert state()['energy']==0;assert state()['day']==1
   base=state()['gold'];page.evaluate('testNow+=60000');page.wait_for_function('player().idleHunt.totalKills>0');assert state()['gold']>base;assert state()['level']>=1;assert '자동 획득' in page.locator('#idlePay').inner_text();assert page.locator('#idleStart').is_disabled()

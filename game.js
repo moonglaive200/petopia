@@ -146,14 +146,14 @@ function renderHome() {
       ["dungeon", "⚔", "냥서바이벌", "하루 1회 · 기력 −50 · 행복도 20 이상"],
       ["romance", "♡", "연애", "메뉴 입장 무료 · 행동마다 기력 −25"],
       ["idle", "⚑", "춘배 원정대", "자동사냥 · 오프라인 최대 8시간"],
-      ["walk", "♧", "힐링하기", "각각 하루 1회 · 주말 낮잠 무료"],
-      ["work", "▣", "주인 노동시키기", "근무 중에도 자유 활동 · 기력 −50"],
       [
         "influencer",
         "✦",
         "인플루언서냥",
         "하루 첫 활동 기력 −25 · 이후 추가 소모 없음",
       ],
+      ["work", "▣", "주인 노동시키기", "근무 중에도 자유 활동 · 기력 −50"],
+      ["walk", "♧", "힐링하기", "각각 하루 1회 · 주말 낮잠 무료"],
       ["gambling", "♠", "도박하기", "장비 강화 · 카지노"],
       ["bank", "♜", "펫은행", "대출 · 투자 · 집 사기"],
     ]
@@ -610,7 +610,7 @@ function renderLive() {
     remaining = Math.max(0, 3 - s.day + s.liveDay),
     tier = socialLevel(s.liveFollowers);
   gameShell(
-    `${title("PET LIVE", "펫 Live", "매 방송 네 가지 상황, 상황마다 네 가지 선택!")}<div class="social-profile"><span class="social-avatar">●</span><div><strong>춘배의 Live</strong><p>팔로워 ${money(s.liveFollowers)}명 · ${remaining ? remaining + "일 후" : "오늘 방송 가능"}</p></div></div>${socialBackdrop(s.liveFollowers)}<div class="live-stage studio-${tier.level}">${studioProps()}${spriteMarkup("chunbae", "normal", "breathing")}<span class="live-badge">● LIVE PREVIEW</span></div><label class="field-label">방송 주제<select id="liveTopic">${LIVE_TOPICS.map((t, i) => `<option ${(i === 1 && !s.treats.some((n) => n > 0)) || (i === 2 && !s.toys.length) || (i === 9 && !s.romance) || (i === 11 && s.liveFollowers < 300) ? "disabled" : ""}>${t}</option>`).join("")}</select></label><button class="btn primary wide" id="startLive" ${remaining || s.energy < cost || !E.canAct(s) ? "disabled" : ""}>방송 시작 · 기력 −${cost}</button><p class="note">12개 주제 · 24개 상황 · 96개 선택지. 선택마다 팬·후원·행복도 결과가 달라져.<br>네 번째 선택은 돌발 도전! 45%로 대성공, 나머지는 소소한 반응이야.<br>소품은 소비하지 않아. 완료 시 썸냥이 만남 5%, 300명부터 협찬 방송 해금.</p>${s.lastLive ? `<p class="game-notice">지난 방송: 후원 ${s.lastLive.gold} G · 팔로워 +${s.lastLive.gain}</p>` : ""}`,
+    `${title("PET LIVE", "펫 Live", "매 방송 네 가지 상황, 상황마다 네 가지 선택!")}<div class="social-profile"><span class="social-avatar">●</span><div><strong>춘배의 Live</strong><p>팔로워 ${money(s.liveFollowers)}명 · ${remaining ? remaining + "일 후" : "오늘 방송 가능"}</p></div></div>${socialBackdrop(s.liveFollowers)}<div class="live-broadcast-layout"><div class="live-stage studio-${tier.level}">${studioProps()}${spriteMarkup("chunbae", "normal", "breathing")}<span class="live-badge">● LIVE PREVIEW</span><span class="live-viewers">◉ 예상 시청자 ${money(Math.floor(s.liveFollowers / 10))}명</span></div>${liveChatPanel(true)}</div><label class="field-label">방송 주제<select id="liveTopic">${LIVE_TOPICS.map((t, i) => `<option ${(i === 1 && !s.treats.some((n) => n > 0)) || (i === 2 && !s.toys.length) || (i === 9 && !s.romance) || (i === 11 && s.liveFollowers < 300) ? "disabled" : ""}>${t}</option>`).join("")}</select></label><button class="btn primary wide" id="startLive" ${remaining || s.energy < cost || !E.canAct(s) ? "disabled" : ""}>방송 시작 · 기력 −${cost}</button><p class="note">12개 주제 · 24개 상황 · 96개 선택지. 선택마다 팬·후원·행복도 결과가 달라져.<br>네 번째 선택은 돌발 도전! 45%로 대성공, 나머지는 소소한 반응이야.<br>소품은 소비하지 않아. 완료 시 썸냥이 만남 5%, 300명부터 협찬 방송 해금.</p>${s.lastLive ? `<p class="game-notice">지난 방송: 후원 ${s.lastLive.gold} G · 팔로워 +${s.lastLive.gain}</p>` : ""}`,
     renderInfluencer,
   );
   document.querySelector("#startLive").onclick = () => {
@@ -627,13 +627,18 @@ function runLive(topic) {
   let step = 0,
     fanScore = 0,
     goldScore = 0;
+  const chatState = {
+    messages: [],
+    viewers: Math.floor(s.liveFollowers / 10),
+  };
   function draw() {
     const scene = playlist[step];
     gameShell(
-      `${title("● ON AIR", topic)}${socialBackdrop(s.liveFollowers)}<div class="live-stage studio-${tier.level}" id="onairStage">${studioProps()}${spriteMarkup("chunbae", "normal", "live-cat breathing")}${topic === "썸냥이 합방" && s.romance ? spriteMarkup(s.romance.kind, "happy", "live-partner") : ""}<div class="owner-actor" id="liveOwner" hidden><canvas id="liveOwnerArt" width="32" height="32"></canvas></div><span class="live-prop" id="liveProp"></span><span class="live-badge">● LIVE</span><div class="live-chat" id="liveChat">채팅: ${scene[0]}</div></div><h2>${scene[0]}</h2><div class="choice-row live-choices">${scene[1].map((label, i) => `<button class="btn" data-choice="${i}">${label}<small>${["팬 중심 · 팬 +18 / 후원 +12", "후원 중심 · 팬 +10 / 후원 +24", "편안하게 · 팬 +6 / 후원 +8 / 행복도 +5", "돌발 도전 · 45% 대성공"][i]}</small></button>`).join("")}</div><p class="note">돌발 상황 ${step + 1}/4 · 중단하면 횟수는 소모되고 정산은 없어.</p>`,
+      `${title("● ON AIR", topic)}${socialBackdrop(s.liveFollowers)}<div class="live-broadcast-layout"><div class="live-stage studio-${tier.level}" id="onairStage">${studioProps()}${spriteMarkup("chunbae", "normal", "live-cat breathing")}${topic === "썸냥이 합방" && s.romance ? spriteMarkup(s.romance.kind, "happy", "live-partner") : ""}<div class="owner-actor" id="liveOwner" hidden><canvas id="liveOwnerArt" width="32" height="32"></canvas></div><span class="live-prop" id="liveProp"></span><span class="live-badge">● LIVE</span><span class="live-viewers">◉ 시청자 <strong id="liveStreamViewers">${money(chatState.viewers)}</strong>명</span><div class="live-chat" id="liveChat">채팅: ${scene[0]}</div></div>${liveChatPanel()}</div><h2>${scene[0]}</h2><div class="choice-row live-choices">${scene[1].map((label, i) => `<button class="btn" data-choice="${i}">${label}<small>${["팬 중심 · 팬 +18 / 후원 +12", "후원 중심 · 팬 +10 / 후원 +24", "편안하게 · 팬 +6 / 후원 +8 / 행복도 +5", "돌발 도전 · 45% 대성공"][i]}</small></button>`).join("")}</div><p class="note">돌발 상황 ${step + 1}/4 · 중단하면 횟수는 소모되고 정산은 없어.</p>`,
       renderLive,
     );
     activeActivity = true;
+    const chat = mountLiveChat(chatState, topic);
     let timer;
     bind("choice", (raw) => {
       const choice = Number(raw);
@@ -693,6 +698,11 @@ function runLive(topic) {
             "채팅: 광고까지 귀엽네 후원합니다!",
             "채팅: 편안하다… 춘배가 행복하면 됐어.",
           ][choice];
+      chat.reaction(
+        document
+          .querySelector("#liveChat")
+          .textContent.replace(/^채팅:\s*/, ""),
+      );
       catVoice(
         mode === "sleep" ? "purr" : risky && !win ? "complain" : "happy",
       );
@@ -707,7 +717,7 @@ function runLive(topic) {
           cross = E.addFollowers(s, "live", 20 + fanScore),
           gain = s.liveFollowers - before,
           gold = E.reward(s, 35 + goldScore + (topic === "협찬 방송" ? 90 : 0));
-        s.lastLive = { viewers: 20 + s.liveFollowers, gold, gain, topic };
+        s.lastLive = { viewers: chatState.viewers, gold, gain, topic };
         s.highlights.push(topic + " 명장면");
         s.highlights = s.highlights.slice(-15);
         const event = E.meet(s, "live");
@@ -721,7 +731,10 @@ function runLive(topic) {
         );
       }, 1300);
     });
-    setCleanup(() => clearTimeout(timer));
+    setCleanup(() => {
+      clearTimeout(timer);
+      chat.stop();
+    });
   }
   draw();
 }
