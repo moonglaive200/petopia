@@ -1,16 +1,15 @@
 function renderArcade() {
   gameShell(
-    `<div class="neon-lobby">${title("OPEN ALL NIGHT · CLOSED WHEN SLEEPY", "방앗간 ARCADE", "집사는 여길 그냥 방앗간이라고 부른다.")}<div class="neon-sign">MEOW • PLAY • REPEAT</div><div class="destination-grid three"><button class="destination" data-arcade="claw"><span>♙</span><h2>인형뽑기</h2><p>직접 집게 조작<br>다이아 · 장난감 · 츄르</p></button><button class="destination" data-arcade="rhythm"><span>♫</span><h2>리듬게임</h2><p>D F J K · 4키<br>정확히 맞춰 다이아 획득</p></button><button class="destination" data-arcade="hex"><span>⬡</span><h2>오락하기!</h2><p>네가 만든 HEX FINALE<br>큰 고양이와 작은 고양이</p></button></div><p class="note">각 게임은 기력 5와 금화 참가비 사용. 나가거나 새로고침하면 진행 중인 판은 종료돼.</p></div>`,
+    `<div class="neon-lobby">${title("OPEN ALL NIGHT · CLOSED WHEN SLEEPY", "방앗간 ARCADE", "집사는 여길 그냥 방앗간이라고 부른다.")}<div class="neon-sign">MEOW • PLAY • REPEAT</div><div class="destination-grid three"><button class="destination" data-arcade="claw"><span>♙</span><h2>인형뽑기</h2><p>직접 집게 조작<br>다이아 · 장난감 · 츄르</p></button><button class="destination" data-arcade="rhythm"><span>♫</span><h2>리듬게임</h2><p>D F J K · 4키<br>정확히 맞춰 다이아 획득</p></button><button class="destination" data-arcade="hex"><span>⬡</span><h2>오락하기!</h2><p>네가 만든 HEX FINALE<br>큰 고양이와 작은 고양이</p></button></div><p class="note">산책 입장 때 기력 25를 사용했어. 각 게임은 금화 참가비만 사용. 나가거나 새로고침하면 진행 중인 판은 종료돼.</p></div>`,
     renderWalk,
   );
   bind("arcade", (id) => {
     const s = player(),
       fee = id === "claw" ? 20 : 15;
-    if (!E.canAct(s) || s.energy < 5 || !E.spend(s, fee)) {
-      notice(`기력 5와 ${fee} G가 필요해. 회복·근무 상태도 확인해 줘.`);
+    if (!E.canAct(s) || !E.spend(s, fee)) {
+      notice(`${fee} G가 필요해. 춘배 건강 상태도 확인해 줘.`);
       return;
     }
-    s.energy -= 5;
     s.arcadeSession = { type: id, token: crypto.randomUUID() };
     save();
     ({ claw: renderClaw, rhythm: renderRhythm, hex: renderHex })[id]();
@@ -22,6 +21,7 @@ function finishArcade(gold, diamonds, message) {
   s.gold += gold;
   s.diamonds += diamonds;
   s.arcadeSession = null;
+  completeOuting();
   save();
   activeActivity = false;
   meow(1.15);
@@ -78,11 +78,8 @@ function renderClaw() {
   function settle() {
     if (!s.arcadeSession || s.arcadeSession.token !== session.token) return;
     if (caught?.kind === "toy") {
+      s.toyBag[caught.value] = (s.toyBag[caught.value] || 0) + 1;
       if (!s.toys.includes(caught.value)) s.toys.push(caught.value);
-      else {
-        s.diamonds++;
-        caught.name += " (중복 → 다이아 +1)";
-      }
     }
     if (caught?.kind === "treat") s.treats[caught.value]++;
     finishArcade(
@@ -502,6 +499,7 @@ function renderSlot() {
           `${payout ? `${multiplier}배 당첨! ${payout} G 지급` : "꽝! 춘배: 원래 그런 거야."} · 잔액 ${money(s.gold)} G`;
         document.querySelector(".wallet span").textContent =
           `◈ ${money(s.gold)} G`;
+        completeOuting();
         if (payout) meow();
       }
     }, 90);
@@ -560,6 +558,7 @@ function renderRoulette() {
         `${{ red: "빨강", black: "검정", green: "초록" }[result.color]}! ${result.won ? `${result.payout} G 지급!` : "이번 판은 아쉽게 꽝."} · 잔액 ${money(s.gold)} G`;
       document.querySelector(".wallet span").textContent =
         `◈ ${money(s.gold)} G`;
+      completeOuting();
       if (result.won) meow();
     }, 2400);
     setCleanup(() => clearTimeout(timer));

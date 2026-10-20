@@ -2278,21 +2278,1260 @@ dialog .setting small {
 }
 
 /* Keep slot deletion separate from the button that opens a save. */
-.slot-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.slot-card > .slot { width: 100%; flex: 1; }
-.slot-delete { border: 1px solid #cba38c; background: #f4e4d2; color: #884b38; border-radius: 5px; padding: 10px 6px; font-size: 12px; }
-.slot-delete:hover { background: #ecd2b9; border-color: #a66c50; }
-.delete-actions { display: flex; gap: 12px; margin-top: 24px; }
-.delete-actions .btn { flex: 1; margin-top: 0; }
-.btn.danger { background: #975a43; border-color: #7e4533; color: #fff6e4; box-shadow: 0 4px 0 #683c2d; }
-.btn.danger:hover { background: #a8674d; }
+.slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.slot-card > .slot {
+  width: 100%;
+  flex: 1;
+}
+.slot-delete {
+  border: 1px solid #cba38c;
+  background: #f4e4d2;
+  color: #884b38;
+  border-radius: 5px;
+  padding: 10px 6px;
+  font-size: 12px;
+}
+.slot-delete:hover {
+  background: #ecd2b9;
+  border-color: #a66c50;
+}
+.delete-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+.delete-actions .btn {
+  flex: 1;
+  margin-top: 0;
+}
+.btn.danger {
+  background: #975a43;
+  border-color: #7e4533;
+  color: #fff6e4;
+  box-shadow: 0 4px 0 #683c2d;
+}
+.btn.danger:hover {
+  background: #a8674d;
+}
 
-.character-portrait { width: 128px; max-width: 100%; height: 128px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto 14px; }
+.character-portrait {
+  width: 128px;
+  max-width: 100%;
+  height: 128px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+  margin: 0 auto 14px;
+}
 
-.owner-panel { max-width: 560px; }
-.owner-input { display: block; width: 100%; padding: 16px; border: 2px solid #ab8a61; border-radius: 5px; background: #fff7e4; color: #493626; font-size: 18px; }
-.owner-input:focus { outline: 3px solid #e9c78a; outline-offset: 2px; }
-.owner-input[aria-invalid="true"] { border-color: #ae604b; }
-.form-error { color: #9e4938; font-size: 13px; min-height: 20px; line-height: 1.6; }
-.slot-owner { display: block; font-size: 11px; color: #6e5237; overflow-wrap: anywhere; }
-.chosen-owner { color: #765536; font-size: 14px; overflow-wrap: anywhere; }
+.owner-panel {
+  max-width: 560px;
+}
+.owner-input {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #ab8a61;
+  border-radius: 5px;
+  background: #fff7e4;
+  color: #493626;
+  font-size: 18px;
+}
+.owner-input:focus {
+  outline: 3px solid #e9c78a;
+  outline-offset: 2px;
+}
+.owner-input[aria-invalid="true"] {
+  border-color: #ae604b;
+}
+.form-error {
+  color: #9e4938;
+  font-size: 13px;
+  min-height: 20px;
+  line-height: 1.6;
+}
+.slot-owner {
+  display: block;
+  font-size: 11px;
+  color: #6e5237;
+  overflow-wrap: anywhere;
+}
+.chosen-owner {
+  color: #765536;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+/* v3: warm wood, high contrast and readable Korean pixel typography. */
+:root {
+  --ink: #422d21;
+  --cream: #f4d9ac;
+  --green: #765136;
+  --orange: #b97640;
+}
+body[data-screen="game"] .shade,
+body[data-screen="intro"] .shade {
+  background: #26190f66;
+  backdrop-filter: blur(3px);
+}
+.panel,
+.game-shell {
+  background: #e7c69a;
+  border: 4px double #815638;
+  box-shadow: 0 14px 55px #2b190a55;
+  color: #422d21;
+}
+.game-shell {
+  padding: 28px 30px;
+}
+.game-shell h1,
+.panel h1 {
+  color: #452c1c;
+}
+.game-shell .eyebrow,
+.panel .eyebrow {
+  color: #775235;
+  font-size: 11px;
+}
+.game-shell .desc,
+.panel .desc,
+.note {
+  color: #66503a;
+  font-size: 14px;
+  line-height: 1.85;
+}
+.btn {
+  background: #edca94;
+  color: #50321f;
+  border: 2px solid #9b6d41;
+  box-shadow: 0 3px 0 #7b533533;
+  font-size: 15px;
+}
+.btn:hover {
+  background: #f5dcae;
+}
+.btn.primary {
+  background: #875b38;
+  color: #fff2cf;
+  border-color: #634027;
+  box-shadow: 0 3px 0 #543622;
+}
+.btn.primary:hover {
+  background: #9d6b42;
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+.back,
+.text-button {
+  color: #69482e;
+  font-size: 13px;
+}
+.game-top {
+  border-color: #ba946b;
+}
+.wallet span,
+.wallet span:first-child {
+  background: #d3ad76;
+  color: #422c20;
+  font-size: 13px;
+  border: 1px solid #a87c50;
+}
+.day-label {
+  font-size: 14px;
+  color: #6d482c;
+  margin-left: auto;
+}
+.save-label {
+  font-size: 12px;
+  color: #6c4c32;
+}
+.home-title .date-chip {
+  font-size: 13px;
+  color: #6e4e34;
+}
+.status-strip {
+  background: #efd8b2;
+  border-color: #bd9468;
+}
+.status-strip small,
+.status-strip span {
+  color: #725235;
+  font-size: 12px;
+}
+.status-strip strong {
+  font-size: 19px;
+  color: #40291c;
+}
+.status-strip > div {
+  border-color: #c8a374;
+}
+.status-strip progress::-webkit-progress-bar,
+progress::-webkit-progress-bar {
+  background: #ccae7f;
+}
+.status-strip progress::-webkit-progress-value,
+progress::-webkit-progress-value {
+  background: #9e713d;
+}
+.daily-strip {
+  font-size: 13px;
+  color: #765235;
+}
+.section-heading h2 {
+  font-size: 19px;
+}
+.section-heading > span {
+  font-size: 12px;
+  color: #72553a;
+}
+.activity {
+  background: #efd1a0;
+  border: 2px solid #b18a5c;
+  color: #422c20;
+  min-height: 108px;
+}
+.activity:hover {
+  background: #f3deb9;
+  border-color: #8a5d36;
+}
+.activity small {
+  color: #765439;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.activity strong {
+  font-size: 17px;
+}
+.activity-icon,
+.activity .arrow {
+  color: #94653b;
+}
+.activity.adventure {
+  background: #785235;
+  border-color: #5b3c25;
+}
+.activity.adventure:hover {
+  background: #8b603c;
+}
+.activity.adventure small,
+.activity.adventure .activity-icon {
+  color: #f0d2a0;
+}
+.activity-grid.six-activities .activity {
+  grid-column: auto;
+}
+.tip-banner,
+.game-notice {
+  background: #d9b782;
+  border-color: #b58a55;
+  color: #523a25;
+  font-size: 14px;
+  line-height: 1.9;
+}
+.destination {
+  background: #efd4a8;
+  border: 2px solid #b38b5b;
+  color: #4d321f;
+}
+.destination:hover:not(:disabled) {
+  background: #f5dfb8;
+}
+.destination > span {
+  color: #98673b;
+}
+.destination p,
+.destination small {
+  color: #745038;
+  font-size: 14px;
+}
+.tabs {
+  border-color: #b78d5f;
+}
+.tabs button {
+  background: #e1bd86;
+  border-color: #ad8052;
+  color: #65442e;
+  font-size: 15px;
+}
+.tabs button.selected {
+  background: #805735;
+  border-color: #634328;
+  color: #fff0cd;
+}
+.shop-card {
+  background: #efd6ad;
+  border: 2px solid #b68c5e;
+}
+.shop-card.equipped {
+  background: #e0bd84;
+  border-color: #9d713f;
+}
+.shop-card h3 {
+  font-size: 16px;
+}
+.shop-card p {
+  font-size: 13px;
+  color: #715039;
+}
+.shop-card .btn {
+  font-size: 13px;
+}
+.equipment-icon {
+  color: #9a6b3e;
+}
+.upgrade-button {
+  background: #dbb47d;
+  border: 2px solid #b08350;
+  color: #553820;
+  font-size: 14px;
+}
+.upgrade-button span {
+  color: #6a4529;
+}
+.empty-state {
+  background: #daba88;
+  color: #765234;
+  border-color: #af8251;
+  font-size: 14px;
+}
+.feed-item {
+  background: #efd8b2;
+  border-color: #bc9568;
+}
+.feed-item span,
+.feed-item p {
+  color: #6e5036;
+  font-size: 14px;
+}
+.feed-item strong {
+  color: #8b5335;
+}
+.field-label {
+  font-size: 15px;
+}
+input[type="number"],
+select {
+  background: #f5dfb9;
+  color: #49301f;
+  border: 2px solid #ae8051;
+  font-size: 15px;
+}
+.market-row,
+.loan-row {
+  border-color: #ba9162;
+  font-size: 15px;
+}
+.market-row small,
+.loan-row small {
+  color: #755334;
+  font-size: 12px;
+}
+.bank-card {
+  background: #795236;
+  border-color: #d1af7b;
+  color: #fff0c9;
+}
+.bank-card p {
+  color: #eed7b2;
+  font-size: 13px;
+}
+.bank-card > span {
+  font-size: 14px;
+}
+.game-shell details {
+  font-size: 14px;
+  line-height: 1.8;
+  margin-top: 22px;
+}
+.screen-tools {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 2px solid #ba9060;
+}
+.screen-tools button {
+  padding: 13px 6px;
+  border: 2px solid #a67a4c;
+  background: #d5af79;
+  color: #50321f;
+  border-radius: 5px;
+  font-size: 14px;
+}
+.screen-tools button:hover {
+  background: #e8c895;
+}
+.screen-tools #dayButton {
+  background: #70503b;
+  color: #fff0ce;
+  border-color: #543826;
+}
+.wood-sub {
+  display: inline-block;
+  background: #35261ee8;
+  color: #fff1d1;
+  border: 1px solid #b79162;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 15px;
+  line-height: 1.8;
+  text-shadow: 1px 1px #1b100b;
+  letter-spacing: 1px;
+}
+.hero .eyebrow {
+  display: inline-block;
+  padding: 7px 10px;
+  background: #35261ee0;
+  color: #fff0ce;
+  border-radius: 4px;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+.hero .version {
+  font-size: 14px;
+}
+.modal-body {
+  color: #49311e;
+}
+.setting input {
+  color: #49311e;
+}
+dialog {
+  background: #f1d5a8;
+  border: 3px solid #987044;
+  color: #432b1d;
+}
+.cat-sprite {
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-size: 500% calc(var(--rows) * 100%);
+  background-position: calc(var(--col) * 25%) calc(var(--row) * 50%);
+  image-rendering: pixelated;
+  display: inline-block;
+}
+.chunbae-sprite {
+  width: 132px;
+  height: 190px;
+}
+.companion-sprite {
+  width: 155px;
+  height: 155px;
+}
+.breathing {
+  animation: catBreathe 2.4s ease-in-out infinite;
+}
+.still .breathing {
+  animation: none;
+}
+.home-cats {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: absolute;
+  bottom: 28px;
+  z-index: 2;
+  width: 100%;
+  gap: 5px;
+}
+.pet-stage {
+  height: 270px;
+  background: linear-gradient(#dfc89f 67%, #ac8050 67% 70%, #cfa973 70%);
+  border: 2px solid #b68d5b;
+}
+.speech {
+  color: #573b24;
+  background: #f5dfb8;
+  border-color: #b18a59;
+  font-size: 14px;
+  max-width: 92%;
+  line-height: 1.6;
+  top: 14px;
+}
+.speech:after {
+  background: #f5dfb8;
+  border-color: #b18a59;
+}
+.stage-label {
+  font-size: 12px;
+  color: #5f432a;
+}
+.floor-rug {
+  background: #bd935d;
+  border-color: #a57a47;
+  width: 220px;
+}
+.house-0 {
+  background: linear-gradient(#8caa79 67%, #6f8454 67% 70%, #b1a171 70%);
+}
+.house-0 .window-pixel,
+.house-0 .wall-picture {
+  display: none;
+}
+.house-0:before {
+  content: "♧";
+  position: absolute;
+  font-size: 180px;
+  color: #617e51;
+  left: 4%;
+  bottom: 15px;
+}
+.house-1 {
+  background: linear-gradient(#c49b67 67%, #9b713f 67% 70%, #b48b57 70%);
+}
+.inventory-list {
+  border: 2px solid #b58a5a;
+  border-radius: 6px;
+  background: #e2bf8c;
+  padding: 15px;
+}
+.inventory-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 0;
+  border-bottom: 1px solid #bb9161;
+  font-size: 14px;
+}
+.inventory-list span {
+  color: #785535;
+}
+.result-cat,
+.sleeping-pair,
+.date-cats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.romance-stage {
+  height: 245px;
+  background: linear-gradient(#d9bfa5, #efd4ab);
+  border: 2px solid #b98b69;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 22px 0;
+}
+.romance-stage .cat-sprite {
+  width: 180px;
+  height: 180px;
+}
+.relationship-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: #8f5c4c;
+  color: #ffe7cc;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+}
+.romance-hearts {
+  position: absolute;
+  bottom: 15px;
+  color: #a35c5c;
+  letter-spacing: 3px;
+  font-size: 18px;
+}
+.romance-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.empty-romance {
+  text-align: center;
+  border: 2px dashed #ad815c;
+  background: #dfbc8d;
+  padding: 40px 15px;
+  margin-bottom: 20px;
+}
+.empty-romance > span {
+  font-size: 60px;
+  color: #a06a61;
+}
+.new-crush {
+  text-align: center;
+  border: 3px double #a16b54;
+  padding: 20px;
+  margin: 20px 0;
+  background: #f1cfaa;
+}
+.day-summary {
+  text-align: center;
+}
+.day-summary h1 {
+  font-size: 46px;
+  color: #805435;
+}
+.day-summary .sleeping-pair {
+  height: 180px;
+}
+.day-deltas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.day-deltas > div {
+  background: #efd7af;
+  border: 2px solid #ba8d5b;
+  border-radius: 6px;
+  padding: 18px 8px;
+}
+.day-deltas span {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+.day-deltas strong {
+  font-size: 22px;
+}
+.positive {
+  color: #77612a;
+}
+.negative {
+  color: #a0523b;
+}
+.day-ledger {
+  text-align: left;
+  background: #d6b280;
+  padding: 16px 22px;
+  margin: 22px 0;
+  font-size: 14px;
+  line-height: 1.8;
+  border-radius: 6px;
+}
+.cutscene {
+  height: 220px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(#b8d7d0 60%, #c2a780 60%);
+  border: 3px solid #9d7a53;
+  border-radius: 6px;
+}
+.city-blocks {
+  position: absolute;
+  inset: 20% 0 40%;
+  background: repeating-linear-gradient(
+    90deg,
+    #8da1a4 0 40px,
+    transparent 40px 55px,
+    #9aafab 55px 100px
+  );
+  opacity: 0.7;
+}
+.owner-actor {
+  width: 100px;
+  height: 130px;
+  position: relative;
+  z-index: 3;
+}
+.owner-actor canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+.owner-actor > span {
+  position: absolute;
+  left: 30%;
+  top: -10px;
+  font-size: 28px;
+  z-index: 2;
+}
+.walking {
+  animation: ownerCommute 2s ease-in-out infinite;
+}
+.scene-construction {
+  background: linear-gradient(#dcc9a4 60%, #af8758 60%);
+}
+.scene-lab {
+  background: linear-gradient(#c3dbda 60%, #94aba4 60%);
+}
+.scene-sleep {
+  background: linear-gradient(#55536b 60%, #84715d 60%);
+}
+.live-stage {
+  height: 250px;
+  border: 3px solid #ae8259;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(#d6c1a6 70%, #bd976a 70%);
+  overflow: hidden;
+  margin: 20px 0;
+}
+.live-stage .cat-sprite {
+  position: relative;
+  z-index: 2;
+}
+.live-badge {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  background: #a75e51;
+  color: #fff0d1;
+  padding: 5px 9px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+.live-chat {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  background: #493123df;
+  color: #fff0d3;
+  padding: 9px;
+  font-size: 13px;
+  z-index: 5;
+}
+.live-stage .owner-actor {
+  position: absolute;
+  right: 15%;
+  bottom: 40px;
+}
+.owner-actor[hidden] {
+  display: none;
+}
+.dance-scene .owner-actor {
+  animation: ownerDance 0.35s infinite alternate;
+}
+.dance-scene .cat-sprite {
+  animation: catBreathe 0.4s infinite alternate;
+}
+.paw-scene .cat-sprite {
+  transform: scale(2) translateY(20px);
+  transition: 0.5s;
+}
+.bounce-scene .cat-sprite {
+  animation: catBounce 0.4s infinite alternate;
+}
+.sleep-scene {
+  filter: brightness(0.85);
+}
+.social-photo {
+  background: linear-gradient(#dfbfa0 65%, #c6a273 65%);
+  border-color: #ac7e51;
+}
+.social-profile p {
+  color: #745336;
+  font-size: 14px;
+}
+.badge {
+  background: #c5a270;
+  color: #51371f;
+  font-size: 12px;
+}
+.hospital-stage {
+  background: #d6bea0;
+  border-color: #af875b;
+}
+.dungeon-intro {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+  background: #cfa775;
+  border: 3px double #9c6d3f;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+.survival-poster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px;
+}
+.survival-poster span {
+  font-size: 16px;
+  color: #69442b;
+}
+.boss-timeline {
+  padding: 20px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.boss-timeline strong {
+  display: block;
+  padding: 10px 0;
+  color: #7f442e;
+  font-size: 18px;
+}
+.dungeon-entry {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 20px 0;
+}
+.dungeon-entry > span {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.boss-codex {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 20px;
+  background: #e2bc86;
+  font-size: 14px;
+}
+.survival-hud {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 0;
+  font-size: 15px;
+}
+.survival-hud strong {
+  font-size: 24px;
+}
+.survival-hud button {
+  margin-left: auto;
+}
+.boss-run-bars > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  padding: 9px 0;
+}
+.boss-run-bars > div span {
+  min-width: 130px;
+}
+.boss-run-bars progress {
+  height: 10px;
+}
+.boss-run-bars progress::-webkit-progress-value {
+  background: #a2635b;
+}
+.boss-run-bars small {
+  white-space: nowrap;
+}
+.run-build {
+  font-size: 12px;
+  line-height: 1.8;
+  background: #d5b17e;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 4px;
+  min-height: 36px;
+}
+.upgrade-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(500px, 95%);
+}
+.upgrade-choices .btn {
+  margin: 0 !important;
+  box-shadow: none;
+}
+.upgrade-choices strong,
+.upgrade-choices small {
+  display: block;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.upgrade-choices small {
+  font-size: 13px;
+}
+#survivalOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #302016e8;
+  color: #fff0d1;
+  padding: 20px;
+  backdrop-filter: blur(3px);
+}
+#survivalOverlay[hidden] {
+  display: none;
+}
+#survivalOverlay h2 {
+  color: #f6d49f;
+  font-size: 25px;
+}
+#survivalOverlay p {
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+#survivalCanvas {
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  display: block;
+  image-rendering: pixelated;
+}
+.intro-panel {
+  width: min(900px, 100%);
+  margin: auto;
+  background: #e5c396;
+  border: 4px double #8c603c;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.intro-forest {
+  height: 360px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(#4f6e57 0, #8ea17a 65%, #7b8e5b 66%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 20px;
+}
+.intro-tree {
+  position: absolute;
+  left: 15%;
+  top: -60px;
+  width: 85px;
+  height: 370px;
+  background: repeating-linear-gradient(
+    90deg,
+    #634a31 0 12px,
+    #74573a 12px 20px
+  );
+  transform: rotate(-5deg);
+}
+.intro-tree:before {
+  content: "";
+  position: absolute;
+  top: -35px;
+  left: -150px;
+  width: 430px;
+  height: 250px;
+  background: #355d42;
+  border-radius: 38%;
+  box-shadow:
+    80px 30px #426c47,
+    -100px 20px #3e6344;
+}
+.intro-bush {
+  position: absolute;
+  bottom: 0;
+  width: 270px;
+  height: 95px;
+  background: #426f49;
+  border-radius: 50% 50% 0 0;
+  z-index: 2;
+}
+.bush-left {
+  left: 5%;
+}
+.bush-right {
+  right: 2%;
+  background: #587d4c;
+}
+.intro-forest .cat-sprite {
+  z-index: 3;
+}
+.intro-sun {
+  position: absolute;
+  right: 20%;
+  top: 50px;
+  color: #f5d886;
+  font-size: 48px;
+  text-shadow: 0 0 45px #ffdc8a;
+}
+.intro-dialogue {
+  padding: 25px 32px;
+  min-height: 210px;
+}
+.intro-dialogue small {
+  color: #96623a;
+  font-size: 16px;
+}
+.intro-dialogue p {
+  font-size: 18px;
+  line-height: 1.9;
+  min-height: 70px;
+}
+.intro-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.shivering {
+  animation: shiver 0.13s infinite alternate;
+}
+@keyframes shiver {
+  from {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  to {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+@keyframes catBreathe {
+  50% {
+    transform: translateY(-3px) scaleY(1.015);
+  }
+}
+@keyframes ownerCommute {
+  0% {
+    transform: translateX(-100px);
+  }
+  50% {
+    transform: translateX(30px) translateY(-5px);
+  }
+  100% {
+    transform: translateX(150px);
+  }
+}
+@keyframes ownerDance {
+  from {
+    transform: rotate(-15deg) translateY(-5px);
+  }
+  to {
+    transform: rotate(15deg) translateY(3px);
+  }
+}
+@keyframes catBounce {
+  to {
+    transform: translateY(-15px) rotate(4deg);
+  }
+}
+@media (max-width: 650px) {
+  .game-shell {
+    padding: 20px 14px;
+  }
+  .wallet {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .wallet span {
+    font-size: 11px;
+  }
+  .save-label {
+    display: none;
+  }
+  .day-label {
+    font-size: 12px;
+  }
+  .game-shell .desc,
+  .note {
+    font-size: 13px;
+  }
+  .activity strong {
+    font-size: 15px;
+  }
+  .activity small {
+    font-size: 12px;
+  }
+  .activity {
+    padding: 15px 10px;
+    gap: 8px;
+    min-height: 125px;
+  }
+  .activity-icon {
+    font-size: 22px;
+  }
+  .status-strip small,
+  .status-strip span {
+    font-size: 11px;
+  }
+  .daily-strip {
+    font-size: 11px;
+  }
+  .screen-tools {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7px;
+  }
+  .screen-tools button {
+    font-size: 12px;
+    padding: 13px 5px;
+  }
+  .home-title .date-chip {
+    font-size: 12px;
+  }
+  .speech {
+    font-size: 12px;
+  }
+  .pet-stage {
+    height: 265px;
+  }
+  .home-cats {
+    gap: 0;
+  }
+  .home-cats .chunbae-sprite {
+    width: 120px;
+    height: 180px;
+  }
+  .home-cats .companion-sprite {
+    width: 140px;
+    height: 140px;
+  }
+  .tip-banner,
+  .game-notice {
+    font-size: 13px;
+  }
+  .shop-card h3 {
+    font-size: 14px;
+    min-height: 28px;
+  }
+  .shop-card p {
+    font-size: 12px;
+    min-height: 30px;
+  }
+  .game-shell .shop-card .btn {
+    font-size: 12px;
+    padding: 11px 5px;
+  }
+  .shop-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+  .destination h2 {
+    font-size: 16px;
+  }
+  .destination p,
+  .destination small {
+    font-size: 12px;
+  }
+  .market-row,
+  .loan-row {
+    font-size: 13px;
+  }
+  .market-row .btn,
+  .loan-row .btn {
+    font-size: 11px;
+  }
+  .field-label {
+    font-size: 13px;
+  }
+  .day-deltas {
+    grid-template-columns: 1fr 1fr;
+  }
+  .day-deltas strong {
+    font-size: 22px;
+  }
+  .day-summary h1 {
+    font-size: 38px;
+  }
+  .dungeon-intro {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .survival-poster {
+    height: 180px;
+  }
+  .boss-timeline {
+    padding: 12px 20px;
+  }
+  .boss-timeline strong {
+    font-size: 18px;
+  }
+  .dungeon-entry {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .boss-codex {
+    grid-template-columns: 1fr;
+  }
+  .survival-hud {
+    font-size: 12px;
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+  .survival-hud strong {
+    font-size: 20px;
+  }
+  .action-controls {
+    flex-wrap: wrap;
+  }
+  .action-controls > span {
+    font-size: 11px;
+  }
+  .action-controls .btn {
+    font-size: 12px;
+  }
+  .boss-run-bars > div {
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .boss-run-bars progress {
+    min-width: 120px;
+  }
+  .romance-actions .btn {
+    font-size: 12px;
+  }
+  .romance-hearts {
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+  .live-chat {
+    font-size: 12px;
+  }
+  .intro-forest {
+    height: 300px;
+  }
+  .intro-dialogue {
+    padding: 22px 18px;
+  }
+  .intro-dialogue p {
+    font-size: 16px;
+  }
+  .intro-tree {
+    left: 7%;
+  }
+  .intro-bush {
+    width: 170px;
+  }
+  .inventory-list > div {
+    font-size: 13px;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .wood-sub {
+    font-size: 14px;
+  }
+  .date-cats .cat-sprite {
+    width: 130px;
+  }
+  .upgrade-choices strong {
+    font-size: 13px;
+  }
+  .upgrade-choices small {
+    font-size: 11px;
+  }
+  #survivalOverlay {
+    padding: 10px;
+  }
+  #survivalOverlay h2 {
+    font-size: 20px;
+  }
+  #survivalOverlay p {
+    font-size: 12px;
+  }
+  .upgrade-choices .btn {
+    padding: 8px 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shivering,
+  .breathing,
+  .walking,
+  .dance-scene .owner-actor,
+  .paw-scene .cat-sprite,
+  .bounce-scene .cat-sprite {
+    animation: none;
+    transition: none;
+  }
+}
+
+.chunbae-sprite { clip-path: inset(0 6px); }

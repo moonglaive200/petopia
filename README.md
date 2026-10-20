@@ -1,67 +1,103 @@
-# Petopia · 춘배와 집사의 이상한 하루
+# Petopia 0.3 · 춘배와 집사의 이상한 하루
 
-A static HTML / CSS / JavaScript pixel browser game. No npm install, backend, login, or paid assets required.
+HTML/CSS/JavaScript로 실행되는 저장형 브라우저 게임. 온라인 랭킹과 서버 계정은 사용하지 않는다.
 
-## Run
+## 실행과 저장
 
 ```sh
 cd /workspace/petopia
 python -m http.server 8000
 ```
 
-Use a browser on the server address, or publish the repository's `main` branch root with GitHub Pages. A static web server is recommended for consistent iframe/audio behavior. Saves belong to the current browser and origin. Settings includes JSON save export/import and lobby background selection.
+정적 서버 또는 GitHub Pages의 `main` 브랜치 루트에서 실행한다. 모든 이미지·폰트·음원은 저장소에 포함되어 있다. 저장은 현재 브라우저/주소의 localStorage에 보관되며 설정에서 JSON 내보내기/가져오기가 가능하다.
 
-## Main loop
+신규 시작 순서: **시작하기 → 슬롯 → 집사 이름 → 춘배 선택 → 풀숲에서의 첫 만남 → 메인 화면**. 저장 슬롯 3개는 독립적이며 삭제 전 재확인한다. 오레오는 개발 중으로 잠겨 있다. 기존 저장의 돈·이름·아이템·자산을 유지하면서 v3 상태로 확장한다. 기존 슬롯에서는 도입부를 강제로 재생하지 않는다.
 
-Choose one of three independent slots, enter a 1–12 character owner name, then choose 춘배. Names are saved per slot; existing saves continue directly. 오레오 is locked as under development. 춘배 appears above nine activity menus. The information bar shows level, attack/defense, happiness, fame, gold and diamonds.
+## 하루와 주인 기력
 
-**Sleep** advances the in-game day; real-world time does not advance days. A new day restores energy to 100, lowers happiness by 8, pays jobs and assets, and settles due loans. Daily limits: Petstar 1 post, Live once every 3 days, walks 2 outings, dungeons 5 entries (normal and boss combined). Arcade/casino entry uses one outing; several games can be played during that visit. Activity restrictions and all results are saved immediately.
+기력은 **주인 기력 하나**, 최대 100. 당일에는 병원·아이템·시간 경과로 회복되지 않는다. 하단 **잠자기**로 다음 날이 되면 100으로 초기화한다.
 
-### Combat and health
+| 활동 | 일일 제한 | 주인 기력 |
+|---|---|---:|
+| 냥서바이벌 | 하루 1회 | 50 |
+| 산책 | 하루 1회 | 25 |
+| 주인 일하기 | 하루 1회, 다음 날 일당 정산 | 50 |
+| 인플루언서냥 | 펫스타 하루 1회 / Live 3일에 1회 | 그날 첫 활동 25, 이후 0 |
+| 연애 / 인벤토리 / 상점·은행·병원 | 행동별 제한 | 0 |
 
-- 10 normal dungeon tiers, unlocked sequentially. Three enemies per run with individual health bars. First-clear gold/XP rewards doubled.
-- WASD / arrows: move; J / click: attack; Space: dodge; P: pause. Touch controls are included. Tab blur automatically pauses combat.
-- Boss: **조커의남자**, 650 HP, recommended level 6+, card fan / telegraphed charge / roulette hazard circles. Stronger patterns below half health. Defeating it unlocks the casino.
-- Death or happiness reaching 0 requires **펫병원**. Treatment costs `60 + level × 35 G` and restores happiness to at least 55 and energy to at least 50. Insufficient funds trigger a five-day emergency loan even above the ordinary credit limit.
-- Refreshing in an unfinished dungeon sends the pet to hospital; manually retreating consumes the entry and lowers happiness by 5. Gold and XP already owned are preserved.
+인플루언서 메뉴 구경은 무료다. 펫스타와 Live를 모두 하는 날도 합계 25만 사용한다. 메인 화면은 2칸×3줄이고, 상점·은행·병원·잠자기·설정은 하단 보조 메뉴에 있다.
 
-### Petmart and collection
+잠자기는 잠드는 장면 후 **DAY 2, DAY 3…** 정산 화면으로 연결된다. 금화·다이아·주인 기력·행복도 변화와 근무·자산·대출 내역을 표시한다. 현실 시간이 아니라 게임 속 날짜를 사용한다.
 
-- **펫대장간**: 3 weapons and 3 armors; permanent slot upgrades +3 max, costs 60/120/220 G. Upgrade bonuses survive equipment switching. Toy shelf included.
-- **츄르코너**: tuna, salmon, premium churu, with different prices/happiness gains. No generic snack duplicates.
-- **펫오토**: cheap car (drive unlock), luxury car (extra drive gold/happiness), aircraft (extra drive diamond; a car is still required to unlock driving).
-- **장난감**: collected toys can be used twice a day for happiness; churu inventory can be fed freely when the pet is healthy.
+## 냥서바이벌
 
-### Walks and minigames
+- 세 모드 랜덤 방식과 별도 보스 메뉴를 없애고 **냥서바이벌 하나**로 통합.
+- 장소 3개: 햇살 공원 / 버려진 펫마트 / 네온 뒷골목. 넓은 2400×1800 맵, 추적 카메라와 미니맵.
+- **01:00 중간 보스 / 03:00 최종 보스**. 최종 보스를 처치하면 클리어하며, 보스 전투 시간이 추가될 수 있다.
+- WASD/방향키 이동, Space 회피, P 일시정지. 자동 공격. 모바일 방향 버튼과 드래그 이동 지원. 탭을 벗어나면 자동 일시정지.
+- 몬스터 12종, 추격·원거리·돌진과 보스 탄막·장판·회복 패턴. 보스 10종은 장소와 게임 날짜에 따라 순환한다.
+- 무기 6종: 냥발톱 / 생선 / 방울 / 털실공 / 레이저 / 츄르 웅덩이. 보조 능력 6종. 경험치 보석으로 레벨업할 때 3개 중 선택. 선택 중에는 전투가 멈춘다.
+- 무기 5단계와 대응 보조 능력 3단계를 갖추면 진화. 판 안의 성장은 초기화되고, 펫 레벨·장비·발견 기록은 유지된다.
+- 피격 번쩍임, 넉백, 히트스톱, 화면 흔들림, 피해 숫자, 발톱 궤적·탄환·처치 파편과 타격음.
+- 사망해도 생존 시간·처치·보스 보상 정산. 클리어 추가 보상. 사망과 승리에 서로 다른 효과음.
+- 3초마다 진행을 저장한다. 새로고침으로 중단된 전투도 마지막 저장 시점의 진행 보상을 한 번 정산하고 병원으로 보낸다. 직접 철수는 부분 보상을 받고 귀가한다. 입장 기력과 횟수는 반환되지 않는다.
+- 조커의남자 처치 시 카지노 해금. 랭킹은 없고 최근 개인 탐험 내역만 보여준다.
 
-- **Park**: 50% happiness +10/diamond +1; 20% meet a crush/diamond +3/happiness +5; 10% rain/happiness −12; 5% toy; 5% churu; 10% petting/both follower counts +10% (minimum 1). Duplicate toy finds become one diamond.
-- **방앗간**: neon arcade. Claw machine (20 G/energy 5, exact-center catch guaranteed), 4-key rhythm game (15 G/energy 5), and the supplied cat-adapted HEX FINALE (15 G/energy 5). Claw rewards diamonds, toys or churu; rhythm/HEX diamonds depend on performance.
-- **Drive**: car required; base gold, happiness and diamonds, improved by vehicles.
-- **Casino**: boss unlock required. Gold only. Roulette has 15 red / 15 black / 1 green; total payout 2x/2x/30x. Slots have five equally likely symbols: 3 matches 10x, 2 matches return the stake, otherwise 0 (88% expected return). Stakes 10–500 G, payouts include the stake. Casino does not award diamonds.
-- Diamonds are earned only through walks or minigames. They buy premium churu, special toys and vehicles; they cannot be borrowed or traded in the financial markets.
+## 연애
 
-### Social, work and bank
+썸냥이 3종: **치즈냥이 / 턱시도냥이 / 흰색냥이**. 처음에는 비어 있고 획득 방법을 보여준다.
 
-- **Petstar**: daily topic, trending tag, possession-gated themes, persistent feed and comments. Previous Live highlights give a small boost.
-- **Pet Live**: topic choice, 3 interactive incidents, viewers/donations, saved highlights, sponsorships at 300 Live followers. Direct follower gains cross over to the other service at 20%, rounded down, without recursive crossover.
-- Combined fame adds 5%/10%/15% to activity gold at 100/1,000/10,000 followers.
-- **Work**: construction, office, churu lab. Direct jobs lock other activities until sleep and pay modest daily wages. Expensive employees work independently, one per job.
-- **Bank → loans**: limit `200 + (level−1) × 150 G`, due in five days, 10% interest, interest-free early repayment. Maturity settles automatically even into a negative gold balance; no bankruptcy/game-over. Emergency medical loans share the loan ledger.
-- **Bank → spending**: ten matching stock/company names; 3 coins; 3 buildings; company acquisitions. Daily deterministic quotes and a 4% sale fee. Acquired buildings/companies pay passive income each new day.
-- **Bank → housing**: default room + 6 homes, from cardboard studio to space penthouse. Current home changes the room background and work/employee perks. Previously purchased homes can be reselected; effects do not stack.
+활동 완료 시 만남 판정: 던전 **클리어** 1%, 산책 3%, 주인 근무 정산 1%, Live 정산 1%, 펫스타 게시 1%. 기존 공원의 20% 만남 이벤트는 삭제했다. 비게 된 확률은 평범한 산책에 합쳐 평범한 산책 70% / 비 10% / 장난감 5% / 츄르 5% / 쓰다듬 10%다. 만남 판정은 해당 이벤트와 별도다.
 
-## Assets and limits
+- 대화: 무료, 하루 1회, 호감도 +0.15.
+- 츄르 또는 장난감 선물: 종류 합산 하루 1개. 실제 보관함 수량 차감.
+- 데이트: 금화 소비, 하루 1회. 장소별 비용과 호감도 보상 차이.
+- **호감도 3**: 고백. 다이아 1개, 성공률 50%. 성공 전 호감도 3 제한.
+- **호감도 6**: 프로포즈. 다이아 5개, 성공률 50%. 성공 전 호감도 6 제한.
+- 실패해도 호감도는 내려가지 않으며 고백/프로포즈 자체는 호감도를 추가하지 않는다.
+- 연인냥이: 활동 금화 +8%, 공격 +1, 방어 +1.
+- 부부냥이: 활동 금화 +15%, 공격 +3, 방어 +2, 매일 20 G. 방에 춘배와 배우자 두 마리 표시.
+- 호감도 10, 평생의 냥: 활동 금화 +30%, 공격 +6, 방어 +4, 매일 50 G와 참치 츄르.
+- 다른 냥이를 만나면 갈아타기 가능, 새 관계는 호감도 0부터. 썸/연인은 헤어지기, 부부는 이혼하기. 평생의 냥은 관계 종료·갈아타기 불가.
 
-See [ASSETS.md](ASSETS.md) and `licenses/` for audio/font provenance. All distributed assets load locally. The user-provided village illustration is included as the shared default lobby background. Settings can override it for this browser or restore the default.
+## 펫마트·인벤토리
 
-This is a playable single-player prototype; saving uses localStorage, not a server economy or anti-cheat system. Numeric balance is centralized in `engine.js` and can be tuned after playtesting. Existing v1 slots migrate automatically; old debt becomes a five-day loan.
+- 장비: 기존 무기 3종/방어구 3종, 부위별 +3 확정 강화 유지.
+- 장난감: 10종, 기존 3종의 금화 가격 3배. 행복도를 올리지 않고 선물로 호감도를 올린다. 중복 구매·뽑기 획득은 수량으로 저장.
+- 참치 츄르 **100 G**, 연어 **500 G**, 금수저 **1,500 G + 다이아 1**. 종류별 매일 0~2개 입고, 화면을 다시 열어도 재고는 바뀌지 않는다.
+- 내 펫에게 츄르 **먹이기 하루 1개**, 썸냥이에게 **선물 하루 1개**는 독립 제한.
+- 차량 금화 가격 10배: 붕붕카 5,000 G / 냥르쉐 24,000 G / 츄르항공 60,000 G. 기존 드라이브 효과 유지, 주인 일당 +10%/+15%/+25%. 차량 일당 효과는 최고 하나만 적용.
+- 자동차를 소유하면 드라이브 해금. 비행기만으로 자동차 해금 조건을 대신하지는 않는다.
 
-## Validation
+## 근무·집·투자
+
+직접 일하는 중에도 다른 콘텐츠 이용 가능. 공사장·회사·연구소별 출근 컷신. 주인과 직원은 각각 일터별 10단계.
+
+- 주인 승진: 누적 근무 일수 + 금화 교육비.
+- 직원: 고용 비용은 기존 10배, 1단계 일당은 유지. 금화로 교육하며 근무 일수 조건 없음.
+- 빌딩·회사·집 구매 금화 가격은 기존 10배, 기존 기본 수입과 집 일당 효과는 유지.
+- 인수한 회사는 기존 수입에 더해 매일 **해당 회사 주식 1주** 지급.
+- 주식 전일 대비 **−30%~+30%**. 코인은 최대 **+150%**, 음수 가격을 피하도록 하락 하한 **−90%**. 최소 1 G, 매도 수수료 4%. 화면에 범위를 명시한다.
+- 집별 기상 행복도: 집사랑 노숙 중 −10 / 택배 상자 −5 / 반지하 0 / 아파트 +3 / 풀빌라 +6 / 저택 +9 / 우주 펫하우스 +12. 기존 공통 기상 감소를 대체한다.
+- 대출은 5일 후 이자 10% 포함 자동 상환. 부족하면 금화가 마이너스가 되며 파산은 없다.
+- 병원은 레벨별 치료비와 긴급 대출을 지원하되 **주인 기력을 회복하지 않는다**.
+
+## 방송·연출·기존 오락실
+
+춘배와 썸냥이 3종에 기본/잠자기/행복/놀람/슬픔 표정 적용. 펫스타 게시 시 셔터음. Live 선택 시 춘배 움직임, 발바닥 줌, 집사 등장·춤, 잠자기 연출. Live→펫스타 / 펫스타→Live 직접 팔로워 20% 유입, 재귀 유입 없음.
+
+방앗간의 뽑기·리듬·제공된 고양이 HEX와 카지노의 냥슬롯·냥룰렛은 유지한다. 산책 입장의 25 기력 외에 미니게임 추가 기력은 없다. 금화 참가비는 그대로. 다이아는 산책·미니게임에서만 획득한다. 카지노는 금화만 사용한다.
+
+로비 배경은 제공된 마을 이미지, 글자 받침과 나무 버튼. 인게임은 나무·양피지 색감과 높은 글자 대비로 개편했다. 효과음·배경 움직임 설정 및 백업 기능 유지. 출처는 [ASSETS.md](ASSETS.md).
+
+## 검증
 
 ```sh
 node tests/engine.test.cjs
-# With the web server running and Python Playwright + Chromium installed:
+# 서버 실행 및 Python Playwright + Chromium 설치 환경
 python tests/browser_smoke.py
+python tests/owner_name.py
+python tests/slot_delete.py
 ```
 
-The engine suite exercises migration, day limits, jobs, debt/negative balances, medical loans, all park outcomes, unlocks, investments, expected slot payouts, roulette odds, dodge/movement, all ten combat tiers, and a recommended-level boss clear. Browser checks exercise real navigation, saves, daily limits, live events, purchases, investments, medical recovery, each minigame, mobile overflow, combat controls and pause/reload recovery. Tests use an isolated browser profile and do not alter player saves.
+브라우저 테스트는 격리 프로필을 사용한다. 엔진 테스트는 날짜·확률·재고·관계 단계·대출·시장 범위·보상 중복 방지와 세 맵의 전투 클리어를 시뮬레이션한다. 브라우저 테스트의 고가 아이템·연애 후기 단계에는 저장 fixture를 사용하고, UI 선택·연출·결과는 실제 이벤트로 검증한다. 보스 시점과 레벨업 UI에는 시뮬레이션 fixture를 사용하며, 자연 플레이의 전투/클리어 로직은 엔진 시뮬레이션에서 별도로 검증한다.

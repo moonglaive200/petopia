@@ -31,6 +31,15 @@ All game assets are served locally; normal play does not request third-party CDN
 
 ## Background and pixel sprites
 
-- Cat sprites, dungeon enemies, rooms, procedural park background and arcade illustrations are drawn in code for this game.
+- Rooms, the procedural fallback park and arcade illustrations are drawn in code. Current character/enemy images are documented in the v3 section below.
 - Default lobby illustration: `assets/lobby.png`, extracted unchanged from the user-supplied archive `행복한 마을의 동물 친구들.zip`. This is the exact provided image, not a generated imitation.
 - Settings → 로비 배경 선택 optionally overrides the shared default for this browser. Resetting the background returns to the provided village image.
+
+## v3 character and monster art
+
+- `assets/chunbae-base-preview.png`: approved Chunbae base design generated from the user's supplied cat photograph. The personal source photograph is not distributed in this repository.
+- `assets/chunbae-emotions.png`: generated five-pose Chunbae sheet (default, sleeping, happy, surprised, sad), based on the approved design.
+- `assets/romance-cats-preview.png` and `assets/romance-cats-emotions-preview.png`: generated cheese tabby, tuxedo and white companion designs, and their 5-expression sheet.
+- `assets/monsters.png`: newly generated 12-enemy atlas for survival combat. No assets from the inspected external game repository were copied or distributed.
+- Gameplay/Live/intro movement is animated in Canvas/CSS, with hit flashes, particles and transforms layered over these images.
+- Camera shutter, impact, defeat and victory sounds are synthesized locally with Web Audio; the original licensed meow and supplied arcade music are retained.

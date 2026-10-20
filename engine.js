@@ -134,51 +134,98 @@
     { name: "냥세권 오피스텔", cost: 4800, income: 135 },
     { name: "츄르타워", cost: 13000, income: 400 },
   ];
-  const dungeonNames = [
-    "먼지의 반란",
-    "양말 실종 사건",
-    "택배 지하실",
-    "냉장고 뒤편",
-    "소파 아래 왕국",
-    "빨래산 원정",
-    "야근의 늪",
-    "고지서의 탑",
-    "월요일의 문",
-    "집주인의 통보",
+  // v3 catalogs and rules. Existing item indices remain stable for old saves.
+  treats.forEach((t, i) =>
+    Object.assign(t, {
+      cost: [100, 500, 1500][i],
+      diamond: i === 2 ? 1 : 0,
+      affection: [0.15, 0.35, 0.7][i],
+    }),
+  );
+  toys.splice(
+    0,
+    toys.length,
+    ...[
+      "깃털 낚싯대",
+      "우당탕 털실공",
+      "집사 조종 리모컨",
+      "삑삑 생선",
+      "캣닢 주머니",
+      "레이저 쫓기 세트",
+      "자동 나비 장난감",
+      "우주 쥐돌이",
+      "황금 캣휠",
+      "츄르 왕관",
+    ].map((name, i) => ({
+      name,
+      cost: ([90, 180, 350][i] || 400 + (i - 3) * 180) * 3,
+      diamond: i === 2 ? 4 : i > 6 ? i - 6 : 0,
+      affection: 0.2 + i * 0.08,
+    })),
+  );
+  vehicles.forEach((v, i) => {
+    v.cost *= 10;
+    v.work = [0.1, 0.15, 0.25][i];
+    v.text += ` · 주인 일당 +${v.work * 100}% (최고 효과만 적용)`;
+  });
+  houses.forEach((h, i) => {
+    h.cost *= 10;
+    h.wake = [-10, -5, 0, 3, 6, 9, 12][i];
+    h.energy = 0;
+  });
+  houses[0].name = "집사랑 노숙 중";
+  jobs.forEach((j) => {
+    j.hire *= 10;
+    j.cost = 50;
+  });
+  buildings.forEach((b) => (b.cost *= 10));
+  companies.forEach((c) => (c.cost *= 10));
+  const partners = [
+    { name: "치즈냥이", row: 0, likes: 0 },
+    { name: "턱시도냥이", row: 1, likes: 1 },
+    { name: "흰색냥이", row: 2, likes: 2 },
   ];
-  const dungeons = dungeonNames.map((name, i) => ({
+  const bossNames = [
+    "조커의남자",
+    "츄르 밀수왕",
+    "진공청소기 대마왕",
+    "레이저포인터 백작",
+    "택배상자 미믹",
+    "목욕탕의 배신자",
+    "새벽 네 시의 질주냥",
+    "병원장 주사냥",
+    "월세추심관 집사장",
+    "우주를 긁는 냥라토스",
+  ];
+  const bosses = bossNames.map((name, i) => ({
     name,
-    monster: [
-      "먼지 뭉치",
-      "양말 도둑",
-      "상자 미믹",
-      "상한 푸딩",
-      "리모컨 군주",
-      "빨래 골렘",
-      "야근 유령",
-      "고지서 기사",
-      "월요일 마왕",
-      "월세 드래곤",
-    ][i],
-    hp: 30 + i * 18,
-    attack: 7 + i * 2,
-    defense: Math.floor(i / 2),
-    gold: 30 + i * 14,
-    xp: 25 + i * 16,
-    recommended: 1 + i * 2,
+    id: i,
+    pattern: i % 5,
+    hp: 650 + i * 180,
   }));
-  const boss = {
-    name: "조커의남자",
-    hp: 650,
-    attack: 19,
-    defense: 3,
-    gold: 300,
-    xp: 200,
-    recommended: 6,
-  };
+  const defaultDaily = () => ({
+    walk: 0,
+    dungeon: 0,
+    star: 0,
+    influence: 0,
+    work: 0,
+    feed: 0,
+    gift: 0,
+    talk: 0,
+    date: 0,
+  });
+  function stockFor(day, seed = 0) {
+    return [0, 1, 2].map(
+      (i) =>
+        Math.abs(Math.floor(Math.sin(day * 37 + i * 17 + seed) * 10000)) % 3,
+    );
+  }
   function normalize(s) {
-    const defaults = {
-      version: 2,
+    const prev = s.version || 1;
+    const d = {
+      introSeen: true,
+      outingPending: false,
+      version: 3,
       level: 1,
       xp: 0,
       gold: 80,
@@ -195,16 +242,20 @@
       followers: 0,
       liveFollowers: 0,
       day: 1,
-      daily: { walk: 0, dungeon: 0, star: 0, toy: 0 },
+      daily: defaultDaily(),
       liveDay: -2,
       loans: [],
       treats: [2, 0, 0],
       toys: [],
+      toyBag: {},
       vehicles: [],
       house: 0,
       houses: [0],
       employees: [],
       working: null,
+      workLevels: [1, 1, 1],
+      staffLevels: [1, 1, 1],
+      workDays: [0, 0, 0],
       stocks: {},
       coinHoldings: {},
       buildings: [],
@@ -213,21 +264,42 @@
       lastLive: null,
       highlights: [],
       bossCleared: false,
+      bossKills: [],
       hospital: false,
       expedition: null,
       arcadeSession: null,
       walks: 0,
       dayReport: [],
-      toyDay: 0,
+      romance: null,
+      candidate: null,
+      stockDay: 0,
+      treatStock: [],
+      survivalRecords: [],
+      discovered: [],
+      completionSerial: 0,
     };
-    for (const [k, v] of Object.entries(defaults))
+    for (const [k, v] of Object.entries(d))
       if (s[k] === undefined) s[k] = structuredClone(v);
-    for (const k of ["walk", "dungeon", "star", "toy"]) s.daily[k] ??= 0;
+    for (const [k, v] of Object.entries(defaultDaily())) s.daily[k] ??= v;
+    if (prev < 3) {
+      s.toys.forEach((i) => (s.toyBag[i] ??= 1));
+      if (s.working !== null) s.daily.work = 1;
+      if (s.daily.star || s.liveDay === s.day) s.daily.influence = 1;
+    }
     if (s.debt > 0) {
       s.loans.push({ amount: s.debt, due: s.day + 5, source: "기존 대출" });
       s.debt = 0;
     }
-    s.version = 2;
+    if (s.stockDay !== s.day) {
+      s.treatStock = stockFor(s.day, (s.ownerName || "").length);
+      s.stockDay = s.day;
+    }
+    s.market ??= {
+      stock: companies.map((c) => c.stock),
+      coin: coins.map((c) => c.base),
+    };
+    s.energy = Math.max(0, Math.min(100, s.energy));
+    s.version = 3;
     return s;
   }
   function xpNeeded(l) {
@@ -243,17 +315,41 @@
     }
     return levels;
   }
+  function relationshipBonus(s) {
+    return !s.romance
+      ? { gold: 0, attack: 0, defense: 0, gift: 0 }
+      : s.romance.stage === 3
+        ? { gold: 0.3, attack: 6, defense: 4, gift: 50 }
+        : s.romance.stage === 2
+          ? { gold: 0.15, attack: 3, defense: 2, gift: 20 }
+          : s.romance.stage === 1
+            ? { gold: 0.08, attack: 1, defense: 1, gift: 0 }
+            : { gold: 0, attack: 0, defense: 0, gift: 0 };
+  }
   function stats(s) {
+    const b = relationshipBonus(s);
     return {
       hp: 80 + (s.level - 1) * 8 + armors[s.armor].hp,
-      attack: 8 + (s.level - 1) * 2 + weapons[s.weapon].attack + s.weaponUp * 2,
+      attack:
+        8 +
+        (s.level - 1) * 2 +
+        weapons[s.weapon].attack +
+        s.weaponUp * 2 +
+        b.attack,
       defense:
-        1 + Math.floor((s.level - 1) / 3) + armors[s.armor].defense + s.armorUp,
+        1 +
+        Math.floor((s.level - 1) / 3) +
+        armors[s.armor].defense +
+        s.armorUp +
+        b.defense,
     };
   }
   function bonus(s) {
     const n = s.followers + s.liveFollowers;
-    return n >= 10000 ? 0.15 : n >= 1000 ? 0.1 : n >= 100 ? 0.05 : 0;
+    return (
+      (n >= 10000 ? 0.15 : n >= 1000 ? 0.1 : n >= 100 ? 0.05 : 0) +
+      relationshipBonus(s).gold
+    );
   }
   function reward(s, n) {
     const g = Math.floor(n * (1 + bonus(s)) + 1e-8);
@@ -286,18 +382,37 @@
     return true;
   }
   function spend(s, g, d = 0) {
-    if (s.gold < g || s.diamonds < d) return false;
+    if (!Number.isFinite(g) || g < 0 || d < 0 || s.gold < g || s.diamonds < d)
+      return false;
     s.gold -= g;
     s.diamonds -= d;
     return true;
   }
   function canAct(s) {
-    return !s.hospital && s.working === null && !s.expedition;
+    return !s.hospital && !s.expedition && !s.arcadeSession;
   }
   function consume(s, key, limit, energy) {
     if (!canAct(s) || s.daily[key] >= limit || s.energy < energy) return false;
     s.daily[key]++;
     s.energy -= energy;
+    return true;
+  }
+  function influenceCost(s) {
+    return s.daily.influence ? 0 : 25;
+  }
+  function useInfluence(s, type) {
+    const cost = influenceCost(s);
+    if (
+      !canAct(s) ||
+      s.energy < cost ||
+      (type === "star" && s.daily.star >= 1) ||
+      (type === "live" && s.day - s.liveDay < 3)
+    )
+      return false;
+    s.energy -= cost;
+    s.daily.influence = 1;
+    if (type === "star") s.daily.star++;
+    else s.liveDay = s.day;
     return true;
   }
   function upgradeCost(s, t) {
@@ -314,102 +429,302 @@
       building: [buildings, "buildings"],
       company: [companies, "companies"],
     };
-    if (!map[kind]) return false;
+    if (!map[kind] || !Number.isInteger(i)) return false;
     const [items, key] = map[kind],
       item = items[i];
     if (!item) return false;
-    if (kind !== "treat" && s[key].includes(i)) {
+    const repeat = ["treat", "toy"].includes(kind);
+    if (!repeat && s[key].includes(i)) {
       if (["weapon", "armor", "house"].includes(kind)) s[kind] = i;
       return true;
     }
+    if (kind === "treat" && s.treatStock[i] <= 0) return false;
     if (!spend(s, item.cost, item.diamond || 0)) return false;
-    if (kind === "treat") s.treats[i]++;
-    else s[key].push(i);
+    if (kind === "treat") {
+      s.treats[i]++;
+      s.treatStock[i]--;
+    } else if (kind === "toy") {
+      s.toyBag[i] = (s.toyBag[i] || 0) + 1;
+      if (!s.toys.includes(i)) s.toys.push(i);
+    } else s[key].push(i);
     if (["weapon", "armor", "house"].includes(kind)) s[kind] = i;
+    return true;
+  }
+  function vehicleBonus(s) {
+    return Math.max(0, ...s.vehicles.map((i) => vehicles[i].work));
+  }
+  function jobPay(s, i, staff = false) {
+    const level = (staff ? s.staffLevels : s.workLevels)[i],
+      h = houses[s.house],
+      base = jobs[i].pay * (1 + (level - 1) * (staff ? 0.3 : 0.5));
+    return Math.floor(
+      base *
+        (1 +
+          (staff ? h.staff : h.work + vehicleBonus(s)) +
+          relationshipBonus(s).gold),
+    );
+  }
+  function promotion(s, i, staff = false) {
+    const levels = staff ? s.staffLevels : s.workLevels,
+      lv = levels[i];
+    if (lv >= 10) return null;
+    return {
+      cost: Math.round((staff ? jobs[i].hire * 0.4 : 100 + i * 60) * lv * lv),
+      days: staff ? 0 : lv * 2,
+    };
+  }
+  function promote(s, i, staff = false) {
+    const p = promotion(s, i, staff);
+    if (
+      !p ||
+      (staff && !s.employees.includes(i)) ||
+      (!staff && s.workDays[i] < p.days) ||
+      !spend(s, p.cost)
+    )
+      return false;
+    (staff ? s.staffLevels : s.workLevels)[i]++;
+    return true;
+  }
+  function startJob(s, i) {
+    if (!jobs[i] || !consume(s, "work", 1, 50)) return false;
+    s.working = i;
+    return true;
+  }
+  function hire(s, i) {
+    const cost = Math.floor(jobs[i].hire * (1 - houses[s.house].discount));
+    if (s.employees.includes(i) || !spend(s, cost)) return false;
+    s.employees.push(i);
+    return true;
+  }
+  function meet(s, source, r = Math.random(), typeRoll = Math.random()) {
+    s.completionSerial++;
+    const chance = source === "walk" ? 0.03 : 0.01;
+    if (s.romance?.stage === 3 || r >= chance) return null;
+    const choices = [0, 1, 2].filter((i) => i !== s.romance?.kind);
+    const kind =
+      choices[
+        Math.min(choices.length - 1, Math.floor(typeRoll * choices.length))
+      ];
+    if (!s.romance) {
+      s.romance = { kind, affection: 0, stage: 0, since: s.day };
+      return `${partners[kind].name}를 만났어! 연애 메뉴에서 인사해 줘.`;
+    }
+    s.candidate = kind;
+    return `${partners[kind].name}가 다가왔어. 연애 메뉴에서 갈아타기를 선택할 수 있어.`;
+  }
+  function affection(s, n) {
+    const r = s.romance;
+    if (!r) return;
+    const cap = r.stage === 0 ? 3 : r.stage === 1 ? 6 : 10;
+    r.affection = Math.round(Math.min(cap, r.affection + n) * 100) / 100;
+    if (r.stage === 2 && r.affection >= 10) r.stage = 3;
+  }
+  function feedTreat(s, i, gift = false) {
+    if (
+      !canAct(s) ||
+      !treats[i] ||
+      s.treats[i] <= 0 ||
+      s.daily[gift ? "gift" : "feed"] >= 1 ||
+      (gift && !s.romance)
+    )
+      return false;
+    s.treats[i]--;
+    s.daily[gift ? "gift" : "feed"]++;
+    if (gift)
+      affection(s, treats[i].affection * (s.romance.kind === i ? 1.4 : 1));
+    else happy(s, treats[i].happy);
+    return true;
+  }
+  function giftToy(s, i) {
+    if (!canAct(s) || !s.romance || !s.toyBag[i] || s.daily.gift >= 1)
+      return false;
+    s.toyBag[i]--;
+    if (!s.toyBag[i]) s.toys = s.toys.filter((n) => n !== i);
+    s.daily.gift++;
+    affection(s, toys[i].affection);
+    return true;
+  }
+  function talk(s) {
+    if (!canAct(s) || !s.romance || s.daily.talk) return false;
+    s.daily.talk = 1;
+    affection(s, 0.15);
+    return true;
+  }
+  const dates = [
+    { name: "편의점 앞 벤치", cost: 150, gain: 0.2 },
+    { name: "츄르 맛집", cost: 650, gain: 0.5 },
+    { name: "별빛 루프탑", cost: 1800, gain: 1 },
+  ];
+  function date(s, i) {
+    if (
+      !canAct(s) ||
+      !s.romance ||
+      s.daily.date ||
+      !dates[i] ||
+      !spend(s, dates[i].cost)
+    )
+      return false;
+    s.daily.date = 1;
+    affection(s, dates[i].gain);
+    return true;
+  }
+  function confess(s, proposal = false, r = Math.random()) {
+    const p = s.romance;
+    if (
+      !canAct(s) ||
+      !p ||
+      p.stage !== (proposal ? 1 : 0) ||
+      p.affection < (proposal ? 6 : 3) ||
+      s.diamonds < (proposal ? 5 : 1)
+    )
+      return null;
+    s.diamonds -= proposal ? 5 : 1;
+    const success = r < 0.5;
+    if (success) p.stage = proposal ? 2 : 1;
+    return success;
+  }
+  function switchPartner(s) {
+    if (s.candidate === null || s.romance?.stage === 3) return false;
+    s.romance = { kind: s.candidate, affection: 0, stage: 0, since: s.day };
+    s.candidate = null;
+    return true;
+  }
+  function breakUp(s) {
+    if (!s.romance || s.romance.stage === 3) return false;
+    s.romance = null;
+    s.candidate = null;
     return true;
   }
   function nextDay(s) {
     if (s.expedition || s.arcadeSession) return null;
+    const before = {
+      gold: s.gold,
+      diamonds: s.diamonds,
+      energy: s.energy,
+      happiness: s.happiness,
+    };
     const report = [];
-    const h = houses[s.house];
     if (s.working !== null) {
-      const j = jobs[s.working],
-        n = Math.floor(j.pay * (1 + h.work));
+      const i = s.working,
+        n = jobPay(s, i);
       s.gold += n;
-      report.push(`주인 ${j.name} 일당 +${n} G`);
+      s.workDays[i]++;
+      report.push(`${jobs[i].name} 일당 +${n} G · 근무 ${s.workDays[i]}일`);
+      const event = meet(s, "work");
+      if (event) report.push(event);
       s.working = null;
     }
     let income = 0;
-    for (const i of s.employees)
-      income += Math.floor(jobs[i].pay * (1 + h.staff));
+    for (const i of s.employees) income += jobPay(s, i, true);
     for (const i of s.buildings) income += buildings[i].income;
-    for (const i of s.companies) income += companies[i].income;
+    for (const i of s.companies) {
+      income += companies[i].income;
+      s.stocks[i] = (s.stocks[i] || 0) + 1;
+      report.push(`${companies[i].name} 주식 +1주`);
+    }
     if (income) {
       s.gold += income;
       report.push(`직원·자산 수입 +${income} G`);
     }
+    const b = relationshipBonus(s);
+    if (b.gift) {
+      s.gold += b.gift;
+      report.push(`동반자 생활 선물 +${b.gift} G`);
+    }
+    if (s.romance?.stage === 3) {
+      s.treats[0]++;
+      report.push("평생의 냥 선물: 참치 츄르 +1");
+    }
     s.day++;
-    const due = s.loans.filter((l) => l.due <= s.day);
-    for (const l of due) {
+    for (const type of ["stock", "coin"])
+      s.market[type] = s.market[type].map((old, i) => {
+        const r =
+          (Math.sin(s.day * 73 + i * 39 + (type === "coin" ? 91 : 0)) *
+            43758.5453) %
+          1;
+        const u = r - Math.floor(r),
+          change = type === "stock" ? u * 0.6 - 0.3 : u * 2.4 - 0.9;
+        return Math.max(
+          Math.max(1, Math.ceil(old * (type === "stock" ? 0.7 : 0.1))),
+          Math.min(
+            Math.floor(old * (type === "stock" ? 1.3 : 2.5)),
+            1e9,
+            Math.round(old * (1 + change)),
+          ),
+        );
+      });
+    for (const l of s.loans.filter((l) => l.due <= s.day)) {
       const paid = Math.ceil(l.amount * 1.1 - 1e-8);
       s.gold -= paid;
-      report.push(`${l.source} 만기 상환 −${paid} G (이자 10% 포함)`);
+      report.push(`${l.source} 상환 −${paid} G`);
     }
     s.loans = s.loans.filter((l) => l.due > s.day);
     s.energy = 100;
-    happy(s, -8);
-    s.daily = { walk: 0, dungeon: 0, star: 0, toy: 0 };
-    report.push("기력 완충 · 행복도 −8 · 일일 횟수 초기화");
-    if (s.gold < 0)
-      report.push("잔액이 마이너스야. 수입이 생기면 자동으로 메워져.");
+    s.outingPending = false;
+    s.daily = defaultDaily();
+    s.stockDay = s.day;
+    s.treatStock = stockFor(s.day, (s.ownerName || "").length);
+    happy(s, houses[s.house].wake);
+    report.push(
+      `주인 기력 100 · 집 효과 행복도 ${houses[s.house].wake >= 0 ? "+" : ""}${houses[s.house].wake} · 츄르 새 입고`,
+    );
+    if (s.gold < 0) report.push("잔액이 마이너스여도 계속 활동할 수 있어.");
     s.dayReport = report;
+    s.lastDayDelta = {
+      day: s.day,
+      gold: s.gold - before.gold,
+      diamonds: s.diamonds - before.diamonds,
+      energy: s.energy - before.energy,
+      happiness: s.happiness - before.happiness,
+    };
     return report;
   }
   function park(s, r = Math.random()) {
-    if (!consume(s, "walk", 2, 5)) return null;
+    if (!consume(s, "walk", 1, 25)) return null;
     s.walks++;
     let text;
-    if (r < 0.5) {
+    if (r < 0.7) {
       happy(s, 10);
       s.diamonds++;
-      text = "평화로운 산책. 행복도 +10 · 다이아 +1";
-    } else if (r < 0.7) {
-      s.diamonds += 3;
-      happy(s, 5);
-      text = "썸냥이와 눈이 마주쳤어. 행복도 +5 · 다이아 +3";
+      text = "평범한 산책 · 행복도 +10 · 다이아 +1";
     } else if (r < 0.8) {
       happy(s, -12);
-      text = "갑자기 비가 왔어! 행복도 −12";
+      text = "비가 왔어! 행복도 −12";
     } else if (r < 0.85) {
       const i = s.walks % toys.length;
+      s.toyBag[i] = (s.toyBag[i] || 0) + 1;
       if (!s.toys.includes(i)) s.toys.push(i);
-      else s.diamonds++;
-      text = `${toys[i].name} 발견! (이미 있으면 다이아 +1)`;
+      text = `${toys[i].name} 발견!`;
     } else if (r < 0.9) {
       s.treats[0]++;
-      text = "참치 츄르 1개를 주웠어!";
+      text = "참치 츄르 1개 발견!";
     } else {
       const a = Math.max(1, Math.ceil(s.followers * 0.1)),
         b = Math.max(1, Math.ceil(s.liveFollowers * 0.1));
       s.followers += a;
       s.liveFollowers += b;
-      text = `쓰다듬 받았어! 펫스타 +${a} / Live +${b} (각 10%, 최소 1명)`;
+      text = `쓰다듬 받기 · 펫스타 +${a} / Live +${b}명`;
     }
-    return text;
+    const event = meet(s, "walk");
+    return text + (event ? " · " + event : "");
   }
   function drive(s) {
     if (
       !s.vehicles.some((i) => vehicles[i].type === "car") ||
-      !consume(s, "walk", 2, 8)
+      !consume(s, "walk", 1, 25)
     )
       return null;
     s.walks++;
     const luxury = s.vehicles.includes(1),
-      plane = s.vehicles.includes(2);
-    const g = reward(s, 25 + (luxury ? 30 : 0));
+      plane = s.vehicles.includes(2),
+      g = reward(s, 25 + (luxury ? 30 : 0));
     s.diamonds += 1 + (plane ? 1 : 0);
-    happy(s, 15 + (luxury ? 10 : 5));
-    return `${plane ? "비행기까지 동원한 공중" : "창문 열고 동네"} 드라이브! +${g} G · 다이아 +${plane ? 2 : 1} · 행복도 +${luxury ? 25 : 20}`;
+    happy(s, luxury ? 25 : 20);
+    const event = meet(s, "walk");
+    return (
+      `드라이브! +${g} G · 다이아 +${plane ? 2 : 1}` +
+      (event ? " · " + event : "")
+    );
   }
   function addFollowers(s, type, n) {
     const other = type === "star" ? "liveFollowers" : "followers",
@@ -430,24 +745,24 @@
     s.gold -= cost;
     s.hospital = false;
     s.happiness = Math.max(55, s.happiness);
-    s.energy = Math.max(50, s.energy);
     s.expedition = null;
     return { cost, borrow };
   }
   function price(s, type, i) {
-    const list = type === "stock" ? companies : coins,
-      item = list[i],
-      base = type === "stock" ? item.stock : item.base;
-    const wave =
-      Math.sin(s.day * 1.73 + i * 2.31) * 0.7 +
-      Math.sin(s.day * 0.31 + i) * 0.3;
-    return Math.max(
-      2,
-      Math.round(base * (1 + wave * (type === "stock" ? 0.22 : 0.45))),
+    return (
+      s.market?.[type]?.[i] ??
+      (type === "stock" ? companies[i].stock : coins[i].base)
     );
   }
   function trade(s, type, i, side, qty) {
-    if (!Number.isInteger(qty) || qty < 1 || qty > 1000) return false;
+    if (
+      !["stock", "coin"].includes(type) ||
+      !["buy", "sell"].includes(side) ||
+      !Number.isInteger(qty) ||
+      qty < 1 ||
+      qty > 1000
+    )
+      return false;
     const list = type === "stock" ? companies : coins;
     if (!list[i]) return false;
     const book = type === "stock" ? s.stocks : s.coinHoldings,
@@ -462,6 +777,48 @@
       s.gold += Math.floor(p * qty * 0.96);
     }
     return true;
+  }
+  function settleSurvival(s, run) {
+    if (!s.expedition || s.expedition.id !== run.id) return null;
+    const gold = reward(
+        s,
+        Math.max(
+          5,
+          Math.floor(
+            run.time * 0.7 +
+              run.kills * 2 +
+              run.bossKills.length * 100 +
+              (run.bonusGold || 0) +
+              (run.won ? 350 : 0),
+          ),
+        ),
+      ),
+      xp = Math.floor(run.time * 0.4 + run.kills * 2 + (run.won ? 180 : 0)),
+      levels = gainXP(s, xp);
+    for (const i of run.bossKills) {
+      if (!s.bossKills.includes(i)) s.bossKills.push(i);
+      if (i === 0) s.bossCleared = true;
+    }
+    s.discovered = [...new Set([...s.discovered, ...(run.discovered || [])])];
+    s.survivalRecords.unshift({
+      day: s.day,
+      time: Math.floor(run.time),
+      kills: run.kills,
+      won: run.won,
+      gold,
+      xp,
+    });
+    s.survivalRecords = s.survivalRecords.slice(0, 10);
+    s.expedition = null;
+    if (!run.won && !run.retreat) {
+      s.hospital = true;
+      happy(s, -15);
+    } else if (run.won) {
+      happy(s, -4);
+      s.cleared++;
+    }
+    const encounter = run.won ? meet(s, "dungeon") : null;
+    return { gold, xp, levels, encounter };
   }
   function roulette(s, color, bet, r = Math.random()) {
     if (
@@ -507,12 +864,14 @@
     companies,
     coins,
     buildings,
-    dungeons,
-    boss,
+    partners,
+    bosses,
+    dates,
     normalize,
     xpNeeded,
     gainXP,
     stats,
+    relationshipBonus,
     bonus,
     reward,
     happy,
@@ -522,8 +881,25 @@
     spend,
     canAct,
     consume,
+    influenceCost,
+    useInfluence,
     upgradeCost,
     purchase,
+    vehicleBonus,
+    jobPay,
+    promotion,
+    promote,
+    startJob,
+    hire,
+    meet,
+    affection,
+    feedTreat,
+    giftToy,
+    talk,
+    date,
+    confess,
+    switchPartner,
+    breakUp,
     nextDay,
     park,
     drive,
@@ -532,6 +908,7 @@
     heal,
     price,
     trade,
+    settleSurvival,
     roulette,
     slot,
   };

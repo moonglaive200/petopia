@@ -21,16 +21,17 @@ with sync_playwright() as p:
     assert page.locator('#chosenOwner').inner_text()=='<b>냥</b> 집사와 함께할 친구'
     assert page.locator('#chosenOwner b').count()==0
     page.locator('#chunbae').click()
+    page.locator('#skipIntro').click()
     saved=page.evaluate('JSON.parse(localStorage.getItem("petopia.slots"))')
     assert saved[0] is None and saved[1]['ownerName']=='<b>냥</b>'
     page.reload(wait_until='domcontentloaded');page.locator('#start').click()
     assert page.locator('[data-owner-slot="1"]').inner_text()=='집사 · <b>냥</b>'
-    page.locator('[data-slot="1"]').click();assert page.locator('[data-menu]').count()==9
+    page.locator('[data-slot="1"]').click();assert page.locator('[data-menu]').count()==6
     assert page.locator('#ownerName').count()==0
     # Older saves without a name continue without losing progress.
     page.evaluate('()=>{let s=JSON.parse(localStorage.getItem("petopia.slots"));delete s[1].ownerName;s[1].gold=321;localStorage.setItem("petopia.slots",JSON.stringify(s))}')
     page.reload(wait_until='domcontentloaded');page.locator('#start').click();page.locator('[data-slot="1"]').click()
-    assert page.locator('[data-menu]').count()==9
+    assert page.locator('[data-menu]').count()==6
     assert page.evaluate('JSON.parse(localStorage.getItem("petopia.slots"))[1].gold')==321
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     assert not errors,errors

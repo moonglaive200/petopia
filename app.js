@@ -93,7 +93,7 @@ applyBackground();
 function lobby() {
   if (typeof cleanupView === "function") cleanupView();
   document.body.dataset.screen = "lobby";
-  app.innerHTML = `<section class="hero"><div class="eyebrow">A VERY ORDINARY CAT LIFE</div><h1 class="logo">PETOPIA</h1><div class="wood-sub">춘배와 집사의 이상한 하루</div><nav class="menu" aria-label="메인 메뉴"><button class="btn primary" id="start">▷ 시작하기</button><button class="btn" id="settings">⚙ 설정</button><button class="btn" id="credits">♡ 크레딧</button></nav><p class="version">VER. 0.2 · 냥생은 실전이다</p></section>`;
+  app.innerHTML = `<section class="hero"><div class="eyebrow">A VERY ORDINARY CAT LIFE</div><h1 class="logo">PETOPIA</h1><div class="wood-sub">춘배와 집사의 이상한 하루</div><nav class="menu" aria-label="메인 메뉴"><button class="btn primary" id="start">▷ 시작하기</button><button class="btn" id="settings">⚙ 설정</button><button class="btn" id="credits">♡ 크레딧</button></nav><p class="version">VER. 0.3 · 냥생은 실전이다</p></section>`;
   document.querySelector("#start").onclick = () => {
     meow();
     showSlots();
@@ -257,7 +257,8 @@ function enterOwnerName(initialName = "") {
     const name = input.value.trim();
     if (!name || name.length > 12) {
       input.setAttribute("aria-invalid", "true");
-      document.querySelector("#ownerError").textContent = "집사 이름을 1~12자로 입력해 줘.";
+      document.querySelector("#ownerError").textContent =
+        "집사 이름을 1~12자로 입력해 줘.";
       input.focus();
       return;
     }
@@ -273,12 +274,14 @@ function choose(ownerName) {
   if (!ownerName || !ownerName.trim()) return enterOwnerName();
   app.innerHTML = `<section class="panel"><button class="back" id="back">← 집사 이름으로</button><p id="chosenOwner" class="chosen-owner"></p><h1>이야기의 주인공은?</h1><p class="desc">낮잠도 모험도, 같이 하자.</p><div class="cards characters"><button class="character" id="chunbae"><img id="chunbaeArt" class="character-portrait" src="assets/chunbae-base-preview.png" width="128" height="128" alt="은회색 긴 털과 연두빛 눈을 가진 춘배"><strong>춘배</strong><p>집사는 돈을 벌고, 나는 전설이 된다.</p><span class="badge">함께 시작하기 →</span></button><button class="character" disabled aria-label="오레오 개발 중"><canvas id="oreoArt" width="48" height="48"></canvas><strong>오레오</strong><p>냥생 준비 중. 조금만 기다려!</p><span class="badge">🔒 개발 중</span></button></div></section>`;
   drawCat(document.querySelector("#oreoArt").getContext("2d"), 24, 27, 1, true);
-  document.querySelector("#chosenOwner").textContent = `${ownerName} 집사와 함께할 친구` ;
+  document.querySelector("#chosenOwner").textContent =
+    `${ownerName} 집사와 함께할 친구`;
   document.querySelector("#back").onclick = () => enterOwnerName(ownerName);
   document.querySelector("#chunbae").onclick = () => {
     slots[selectedSlot] = PetopiaEngine.normalize({
       character: "chunbae",
       ownerName,
+      introSeen: false,
       createdAt: new Date().toISOString(),
     });
     if (save()) {
@@ -289,10 +292,19 @@ function choose(ownerName) {
 }
 function room() {
   const s = PetopiaEngine.normalize(slots[selectedSlot]);
+  if (!s.introSeen) {
+    playIntro();
+    return;
+  }
   if (s.expedition) {
-    s.expedition = null;
-    s.hospital = true;
-    PetopiaEngine.happy(s, -15);
+    const run = s.expedition;
+    if (run.id && typeof run.time === "number")
+      PetopiaEngine.settleSurvival(s, { ...run, won: false });
+    else {
+      s.expedition = null;
+      s.hospital = true;
+      PetopiaEngine.happy(s, -15);
+    }
     save();
     notice("전투 도중 나왔던 춘배가 병원에 있어. 치료 후 다시 출발하자.");
   }

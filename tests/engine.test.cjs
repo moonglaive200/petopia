@@ -2,288 +2,409 @@ const assert = require("node:assert/strict");
 require("../engine.js");
 require("../action.js");
 const E = PetopiaEngine;
-let assertions = 0;
-function check(fn) {
+let count = 0;
+const test = (name, fn) => {
   fn();
-  assertions++;
-}
-const fresh = (overrides = {}) =>
-  E.normalize({ character: "chunbae", ...overrides });
-check(() => {
-  const s = fresh({ debt: 100, followers: 42 });
-  assert.equal(s.day, 1);
-  assert.equal(s.followers, 42);
-  assert.equal(s.liveFollowers, 0);
+  count++;
+  console.log("✓", name);
+};
+const fresh = (o = {}) => E.normalize({ character: "chunbae", ...o });
+test("old saves migrate once, retain items/name/wealth and do not replay intro", () => {
+  const s = fresh({
+    version: 2,
+    ownerName: "승식",
+    gold: 321,
+    toys: [0, 2],
+    daily: { walk: 1, star: 1 },
+    debt: 100,
+  });
+  assert.equal(s.toyBag[0], 1);
+  assert.equal(s.daily.influence, 1);
+  assert.equal(s.introSeen, true);
   assert.equal(E.debt(s), 100);
   E.normalize(s);
   assert.equal(E.debt(s), 100);
-  assert.deepEqual(s.treats, [2, 0, 0]);
+  assert.equal(s.gold, 321);
+  assert.equal(s.version, 3);
 });
-check(() => {
-  const s = fresh();
-  assert.equal(E.consume(s, "walk", 2, 5), true);
-  assert.equal(E.consume(s, "walk", 2, 5), true);
-  assert.equal(E.consume(s, "walk", 2, 5), false);
-  assert.equal(s.energy, 90);
-  assert.equal(s.daily.walk, 2);
-  E.nextDay(s);
-  assert.equal(s.day, 2);
-  assert.equal(s.daily.walk, 0);
-  assert.equal(s.energy, 100);
-});
-check(() => {
-  const s = fresh({ working: 0 });
-  assert.equal(E.canAct(s), false);
-  assert.equal(E.consume(s, "dungeon", 5, 10), false);
-  const before = s.gold;
-  E.nextDay(s);
-  assert.equal(s.gold, before + 28);
-  assert.equal(s.working, null);
-  assert.equal(E.canAct(s), true);
-});
-check(() => {
-  const s = fresh({
-    house: 6,
-    employees: [0],
-    buildings: [0],
-    companies: [0],
-    working: 1,
-  });
-  const before = s.gold;
-  E.nextDay(s);
-  assert.equal(
-    s.gold,
-    before + Math.floor(40 * 1.35) + Math.floor(28 * 1.2) + 45 + 110,
+test("catalog price multipliers, ten toys and house waking values", () => {
+  assert.deepEqual(
+    E.treats.map((x) => [x.cost, x.diamond]),
+    [
+      [100, 0],
+      [500, 0],
+      [1500, 1],
+    ],
+  );
+  assert.deepEqual(
+    E.toys.slice(0, 3).map((x) => x.cost),
+    [270, 540, 1050],
+  );
+  assert.equal(E.toys.length, 10);
+  assert.deepEqual(
+    E.vehicles.map((x) => x.cost),
+    [5000, 24000, 60000],
+  );
+  assert.equal(E.jobs[0].hire, 5500);
+  assert.equal(E.buildings[0].cost, 18000);
+  assert.equal(E.companies[0].cost, 45000);
+  assert.equal(E.houses[1].cost, 3500);
+  assert.deepEqual(
+    E.houses.map((x) => x.wake),
+    [-10, -5, 0, 3, 6, 9, 12],
   );
 });
-check(() => {
-  const s = fresh({ gold: 0 });
-  assert.equal(E.takeLoan(s, 201), false);
-  assert.equal(E.takeLoan(s, 200), true);
-  assert.equal(E.takeLoan(s, 1), false);
+test("daily limits, exact owner energy and no recovery from hospital", () => {
+  const s = fresh();
+  assert.ok(E.consume(s, "dungeon", 1, 50));
+  assert.equal(E.consume(s, "dungeon", 1, 50), false);
+  assert.equal(s.energy, 50);
+  assert.ok(E.startJob(s, 0));
+  assert.equal(s.energy, 0);
+  assert.ok(E.canAct(s));
+  assert.equal(E.park(s), null);
+  s.hospital = true;
+  E.heal(s);
+  assert.equal(s.energy, 0);
+  E.nextDay(s);
+  assert.equal(s.energy, 100);
+  assert.equal(s.daily.dungeon, 0);
+});
+test("influencer entry cost is paid once in either order", () => {
+  for (const order of [
+    ["star", "live"],
+    ["live", "star"],
+  ]) {
+    const s = fresh();
+    assert.equal(E.influenceCost(s), 25);
+    assert.ok(E.useInfluence(s, order[0]));
+    assert.equal(s.energy, 75);
+    assert.equal(E.influenceCost(s), 0);
+    assert.ok(E.useInfluence(s, order[1]));
+    assert.equal(s.energy, 75);
+    assert.equal(E.useInfluence(s, "star"), false);
+    assert.equal(E.useInfluence(s, "live"), false);
+    E.nextDay(s);
+    assert.equal(E.useInfluence(s, "live"), false);
+    assert.ok(E.useInfluence(s, "star"));
+    E.nextDay(s);
+    E.nextDay(s);
+    assert.ok(E.useInfluence(s, "live"));
+  }
+});
+test("normalization does not replenish energy or treat shop stock", () => {
+  const s = fresh({ energy: 12 });
+  const stock = s.treatStock.slice();
+  s.treatStock[0] = 0;
+  for (let i = 0; i < 10; i++) E.normalize(s);
+  assert.equal(s.energy, 12);
+  assert.equal(s.treatStock[0], 0);
+  E.nextDay(s);
+  assert.ok(s.treatStock.every((n) => n >= 0 && n <= 2));
+  assert.equal(s.energy, 100);
+});
+test("limited treat stock purchases are atomic and gifting/feed use separate caps", () => {
+  const s = fresh({
+    gold: 5000,
+    diamonds: 5,
+    romance: { kind: 0, stage: 0, affection: 0, since: 1 },
+  });
+  s.treatStock = [1, 0, 1];
+  assert.equal(E.purchase(s, "treat", 1), false);
+  assert.equal(s.gold, 5000);
+  assert.ok(E.purchase(s, "treat", 0));
+  assert.equal(E.purchase(s, "treat", 0), false);
+  assert.equal(s.gold, 4900);
+  assert.ok(E.feedTreat(s, 0));
+  assert.ok(E.feedTreat(s, 0, true));
+  assert.equal(E.feedTreat(s, 0), false);
+  assert.equal(E.feedTreat(s, 0, true), false);
+  assert.ok(s.romance.affection > 0);
+  assert.equal(s.daily.feed, 1);
+  assert.equal(s.daily.gift, 1);
+});
+test("toys cost resources, may be repurchased, and are consumed for affection only", () => {
+  const s = fresh({
+    gold: 10000,
+    romance: { kind: 1, stage: 0, affection: 0, since: 1 },
+  });
+  assert.ok(E.purchase(s, "toy", 0));
+  assert.ok(E.purchase(s, "toy", 0));
+  assert.equal(s.toyBag[0], 2);
+  const happy = s.happiness;
+  assert.ok(E.giftToy(s, 0));
+  assert.equal(s.happiness, happy);
+  assert.equal(s.toyBag[0], 1);
+  assert.equal(s.romance.affection, 0.2);
+  assert.equal(E.giftToy(s, 0), false);
+});
+test("romance gates, exact diamond costs, no affection loss, permanent end stage", () => {
+  const s = fresh({
+    gold: 50000,
+    diamonds: 30,
+    romance: { kind: 0, stage: 0, affection: 0, since: 1 },
+  });
+  E.affection(s, 20);
+  assert.equal(s.romance.affection, 3);
+  assert.equal(E.confess(s, false, 0.8), false);
+  assert.equal(s.diamonds, 29);
+  assert.equal(s.romance.affection, 3);
+  assert.equal(E.confess(s, false, 0.2), true);
+  assert.equal(s.romance.affection, 3);
+  E.affection(s, 20);
+  assert.equal(s.romance.affection, 6);
+  assert.equal(E.confess(s, true, 0.8), false);
+  assert.equal(s.diamonds, 23);
+  assert.equal(s.romance.affection, 6);
+  assert.equal(E.confess(s, true, 0.2), true);
+  assert.equal(s.diamonds, 18);
+  assert.equal(s.romance.stage, 2);
+  E.affection(s, 20);
+  assert.equal(s.romance.stage, 3);
+  s.candidate = 2;
+  assert.equal(E.switchPartner(s), false);
+  assert.equal(E.breakUp(s), false);
+  assert.equal(E.meet(s, "walk", 0, 0), null);
+  assert.ok(E.bonus(s) >= 0.3);
+});
+test("meeting chance by completed activity and partner switching resets affection", () => {
+  for (const source of ["dungeon", "work", "live", "star"]) {
+    const s = fresh();
+    assert.equal(E.meet(s, source, 0.011), null);
+    assert.ok(E.meet(s, source, 0.009, 0));
+    assert.equal(s.romance.kind, 0);
+  }
+  const s = fresh();
+  assert.equal(E.meet(s, "walk", 0.031), null);
+  assert.ok(E.meet(s, "walk", 0.029, 0));
+  s.romance.affection = 2;
+  assert.ok(E.meet(s, "walk", 0, 0.99));
+  assert.equal(s.candidate, 2);
+  assert.ok(E.switchPartner(s));
+  assert.equal(s.romance.affection, 0);
+  assert.equal(s.romance.kind, 2);
+  assert.ok(E.breakUp(s));
+  assert.equal(s.romance, null);
+});
+test("work ten-level progression, house/car perks, free activities during work", () => {
+  const s = fresh({ gold: 1e8, house: 3, vehicles: [0, 1, 2] });
+  assert.ok(E.startJob(s, 0));
+  assert.ok(E.canAct(s));
+  assert.equal(E.vehicleBonus(s), 0.25);
+  assert.equal(E.promote(s, 0), false);
+  s.workDays[0] = 2;
+  assert.ok(E.promote(s, 0));
+  assert.equal(s.workLevels[0], 2);
+  assert.equal(E.jobPay(s, 0), Math.floor(28 * 1.5 * 1.4));
+  assert.ok(E.hire(s, 0));
+  for (let i = 1; i < 10; i++) assert.ok(E.promote(s, 0, true));
+  assert.equal(s.staffLevels[0], 10);
+  assert.equal(E.promote(s, 0, true), false);
+  s.workLevels[0] = 10;
+  assert.equal(E.promote(s, 0), false);
+  const old = s.gold;
+  E.nextDay(s);
+  assert.equal(s.workDays[0], 3);
+  assert.equal(s.gold, old + E.jobPay(s, 0) + E.jobPay(s, 0, true));
+  assert.equal(s.daily.work, 0);
+});
+test("daily company stock, passive income, housing mood and visible deltas settle once", () => {
+  const s = fresh({
+    gold: 100,
+    energy: 25,
+    diamonds: 7,
+    house: 4,
+    companies: [0],
+    buildings: [0],
+    romance: { kind: 1, stage: 2, affection: 6, since: 1 },
+  });
+  E.nextDay(s);
+  assert.equal(s.stocks[0], 1);
+  assert.equal(s.gold, 100 + 110 + 45 + 20);
+  assert.equal(s.happiness, 86);
+  assert.deepEqual(s.lastDayDelta, {
+    day: 2,
+    gold: 175,
+    diamonds: 0,
+    energy: 75,
+    happiness: 6,
+  });
+  E.normalize(s);
+  assert.equal(s.stocks[0], 1);
+  E.nextDay(s);
+  assert.equal(s.stocks[0], 2);
+});
+test("daily market ranges stay positive and within advertised bounds", () => {
+  const s = fresh();
+  for (let day = 0; day < 50; day++) {
+    const before = structuredClone(s.market);
+    E.nextDay(s);
+    for (let i = 0; i < 10; i++) {
+      const ratio = s.market.stock[i] / before.stock[i];
+      assert.ok(ratio >= 0.7 - 1e-9 && ratio <= 1.3 + 1e-9);
+    }
+    for (let i = 0; i < 3; i++) {
+      const ratio = s.market.coin[i] / before.coin[i];
+      assert.ok(ratio >= 0.1 - 1e-9 && ratio <= 2.5 + 1e-9);
+      assert.ok(s.market.coin[i] >= 1);
+    }
+  }
+});
+test("loan maturity allows negative balances; treatment never restores owner energy", () => {
+  const s = fresh({ gold: 0, energy: 0 });
+  assert.ok(E.takeLoan(s, 200));
   s.gold = 0;
   for (let i = 0; i < 5; i++) E.nextDay(s);
   assert.equal(s.gold, -220);
-  assert.equal(E.debt(s), 0);
-  const old = s.gold;
-  s.working = 0;
-  E.nextDay(s);
-  assert.equal(s.gold, old + 28);
-});
-check(() => {
-  const s = fresh({ hospital: true, level: 5, gold: -80, happiness: 0 });
-  assert.equal(E.canAct(s), false);
-  const result = E.heal(s);
-  assert.equal(result.cost, 235);
-  assert.equal(result.borrow, 315);
+  s.hospital = true;
+  s.energy = 0;
+  const h = E.heal(s);
+  assert.ok(h.borrow > 0);
+  assert.equal(s.energy, 0);
   assert.equal(s.gold, 0);
-  assert.equal(s.hospital, false);
-  assert.equal(s.happiness, 55);
-  assert.equal(E.debt(s), 315);
+  assert.equal(E.debt(s), h.borrow);
 });
-check(() => {
-  const rolls = [0.1, 0.55, 0.75, 0.82, 0.87, 0.95];
-  for (let i = 0; i < rolls.length; i++) {
-    const s = fresh({ followers: 100, liveFollowers: 50 });
-    const text = E.park(s, rolls[i]);
-    assert.ok(text);
-    assert.equal(s.daily.walk, 1);
-    if (i === 0) {
-      assert.equal(s.diamonds, 1);
-      assert.equal(s.happiness, 90);
-    }
-    if (i === 1) assert.equal(s.diamonds, 3);
-    if (i === 2) assert.equal(s.happiness, 68);
-    if (i === 3) assert.equal(s.toys.length, 1);
-    if (i === 4) assert.equal(s.treats[0], 3);
-    if (i === 5) {
-      assert.equal(s.followers, 110);
-      assert.equal(s.liveFollowers, 55);
-    }
-  }
-});
-check(() => {
-  const s = fresh({ gold: 10000, diamonds: 100 });
-  assert.equal(E.drive(s), null);
-  E.purchase(s, "vehicle", 2);
-  assert.equal(E.drive(s), null);
-  E.purchase(s, "vehicle", 0);
-  assert.ok(E.drive(s));
-  assert.equal(s.diamonds, 94);
-  assert.equal(s.daily.walk, 1);
-});
-check(() => {
+test("park removed the 20% guaranteed romance and keeps exact daily cost", () => {
   const s = fresh();
-  assert.equal(E.addFollowers(s, "star", 100), 20);
+  const text = E.park(s, 0.6);
+  assert.ok(text.includes("평범한"));
+  assert.equal(s.diamonds, 1);
+  assert.equal(s.daily.walk, 1);
+  assert.equal(s.energy, 75);
+  assert.equal(E.park(s, 0.1), null);
+});
+test("cross followers do not recurse", () => {
+  const s = fresh();
+  E.addFollowers(s, "star", 100);
   assert.equal(s.followers, 100);
   assert.equal(s.liveFollowers, 20);
   E.addFollowers(s, "live", 50);
-  assert.equal(s.liveFollowers, 70);
   assert.equal(s.followers, 110);
+  assert.equal(s.liveFollowers, 70);
 });
-check(() => {
-  const s = fresh({ gold: 1000, diamonds: 5 });
-  assert.equal(E.purchase(s, "weapon", 1), true);
-  assert.equal(s.gold, 820);
-  assert.equal(s.weapon, 1);
-  E.purchase(s, "weapon", 0);
-  E.purchase(s, "weapon", 1);
-  assert.equal(s.gold, 820);
-  s.weaponUp = 3;
-  assert.equal(E.upgradeCost(s, "weapon"), 0);
-  E.purchase(s, "treat", 2);
-  assert.equal(s.diamonds, 3);
-  assert.equal(s.treats[2], 1);
-});
-check(() => {
-  const s = fresh({ gold: 1000 });
-  const p = E.price(s, "stock", 0);
-  assert.equal(E.trade(s, "stock", 0, "buy", 3), true);
-  assert.equal(s.stocks[0], 3);
-  assert.equal(E.trade(s, "stock", 0, "sell", 4), false);
-  assert.equal(E.trade(s, "stock", 0, "sell", 3), true);
-  assert.equal(s.gold, 1000 - 3 * p + Math.floor(3 * p * 0.96));
-  assert.equal(E.trade(s, "stock", 0, "buy", -1), false);
-});
-check(() => {
-  const s = fresh({ gold: 1000 });
-  let r = E.roulette(s, "green", 10, 30 / 31 + 0.001);
-  assert.equal(r.payout, 300);
-  assert.equal(s.gold, 1290);
-  r = E.roulette(s, "red", 10, 0);
-  assert.equal(r.payout, 20);
-  r = E.roulette(s, "black", 10, 1 / 31 + 0.001);
-  assert.equal(r.payout, 20);
-  assert.equal(E.roulette(s, "red", 501), null);
-  assert.equal(E.roulette(s, "red", -1), null);
+test("roulette remains 15/15/1 with green 30x and slots expected return 88%", () => {
   const counts = { red: 0, black: 0, green: 0 };
   for (let i = 0; i < 31; i++) {
-    const t = fresh({ gold: 10000 });
-    counts[E.roulette(t, "red", 10, (i + 0.5) / 31).color]++;
+    const s = fresh({ gold: 1000 });
+    const r = E.roulette(s, "green", 10, (i + 0.5) / 31);
+    counts[r.color]++;
+    if (r.color === "green") assert.equal(r.payout, 300);
   }
   assert.deepEqual(counts, { red: 15, black: 15, green: 1 });
-});
-check(() => {
-  const s = fresh({ happiness: 8 });
-  E.nextDay(s);
-  assert.equal(s.hospital, true);
-  assert.equal(s.happiness, 0);
-  assert.equal(E.consume(s, "star", 1, 3), false);
-});
-check(() => {
-  const a = new PetopiaArena(E.stats(fresh()), 0);
-  const x = a.player.x,
-    y = a.player.y;
-  a.update(1, { right: true, down: true });
-  assert.ok(Math.abs(Math.hypot(a.player.x - x, a.player.y - y) - 175) < 0.001);
-  a.paused = true;
-  const t = a.time;
-  a.update(1, { right: true });
-  assert.equal(a.time, t);
-});
-check(() => {
-  const a = new PetopiaArena(E.stats(fresh()), 0);
-  a.player.x = 550;
-  a.player.y = 110;
-  const e = a.enemies[0];
-  const hp = e.hp;
-  assert.equal(a.attack(), true);
-  assert.ok(e.hp < hp);
-  assert.equal(a.attack(), false);
-  a.dodge();
-  a.hit(1000);
-  assert.equal(a.player.hp, a.stats.hp);
-  a.player.inv = 0;
-  a.hit(1000);
-  assert.equal(a.lost, true);
-});
-check(() => {
-  for (let i = 0; i < 10; i++) {
-    const s = fresh({
-      level: 1 + i * 2,
-      weapon: i < 3 ? 0 : i < 6 ? 1 : 2,
-      armor: i < 3 ? 0 : i < 6 ? 1 : 2,
-      weaponUp: Math.min(3, Math.floor(i / 3)),
-    });
-    const a = new PetopiaArena(E.stats(s), i);
-    for (let t = 0; t < 20000 && !a.won && !a.lost; t++) {
-      const target = a.enemies.find((e) => e.hp > 0),
-        p = a.player;
-      if (target) {
-        const dx = target.x - p.x,
-          dy = target.y - p.y;
-        const d = Math.hypot(dx, dy);
-        a.update(0.016, {
-          left: d > 60 && dx < -5,
-          right: d > 60 && dx > 5,
-          up: d > 60 && dy < -5,
-          down: d > 60 && dy > 5,
-          attack: true,
-          dodge: false,
-        });
-      }
-    }
-    assert.equal(
-      a.won,
-      true,
-      "Tier " +
-        (i + 1) +
-        " should be beatable at recommended level with matching gear",
-    );
-  }
-});
-check(() => {
-  const a = new PetopiaArena(E.stats(fresh({ level: 8 })), 0, true);
-  a.enemies[0].hp = 320;
-  for (let i = 0; i < 700; i++) a.update(0.016, { left: false });
-  assert.ok(a.enemies[0].patternIndex >= 3);
-  assert.ok(a.projectiles.length || a.zones.length || a.enemies[0].charge);
-});
-check(() => {
-  const s = fresh({ gold: 1000 });
-  assert.equal(E.slot(s, 10, [0.01, 0.02, 0.03]).payout, 100);
-  assert.equal(E.slot(s, 10, [0.01, 0.02, 0.4]).payout, 10);
-  assert.equal(E.slot(s, 10, [0.01, 0.4, 0.9]).payout, 0);
-  assert.equal(E.slot(s, -1), null);
   let total = 0;
   for (let a = 0; a < 5; a++)
     for (let b = 0; b < 5; b++)
-      for (let c = 0; c < 5; c++) {
-        const t = fresh({ gold: 100 });
-        total += E.slot(t, 100, [
+      for (let c = 0; c < 5; c++)
+        total += E.slot(fresh({ gold: 100 }), 100, [
           (a + 0.5) / 5,
           (b + 0.5) / 5,
           (c + 0.5) / 5,
         ]).payout;
-      }
   assert.equal(total / 125, 88);
 });
-check(() => {
-  const s = fresh({ level: 6, weapon: 1, armor: 1, weaponUp: 1, armorUp: 1 }),
-    a = new PetopiaArena(E.stats(s), 0, true);
-  for (let t = 0; t < 20000 && !a.won && !a.lost; t++) {
-    const e = a.enemies[0],
-      p = a.player,
-      dx = e.x - p.x,
-      dy = e.y - p.y,
-      d = Math.hypot(dx, dy);
-    a.update(0.016, {
-      left: d > 60 && dx < -5,
-      right: d > 60 && dx > 5,
-      up: d > 60 && dy < -5,
-      down: d > 60 && dy > 5,
-      attack: true,
-      dodge:
-        p.inv <= 0 &&
-        (e.windup > 0 ||
-          a.zones.some(
-            (z) => z.warn < 0.2 && Math.hypot(z.x - p.x, z.y - p.y) < 90,
-          )),
-    });
-  }
-  assert.equal(a.won, true);
-  assert.ok(a.enemies[0].patternIndex >= 3);
+test("partial survival rewards, casino unlock and replay protection", () => {
+  const s = fresh({ energy: 100 });
+  assert.ok(E.consume(s, "dungeon", 1, 50));
+  s.expedition = { id: "a" };
+  const r = E.settleSurvival(s, {
+    id: "a",
+    time: 65,
+    kills: 20,
+    bossKills: [0],
+    won: false,
+  });
+  assert.ok(r.gold > 100);
+  assert.ok(r.xp > 0);
+  assert.equal(s.bossCleared, true);
+  assert.equal(s.hospital, true);
+  assert.equal(s.energy, 50);
+  const gold = s.gold;
+  assert.equal(
+    E.settleSurvival(s, {
+      id: "a",
+      time: 65,
+      kills: 20,
+      bossKills: [0],
+      won: false,
+    }),
+    null,
+  );
+  assert.equal(s.gold, gold);
 });
-console.log(
-  `PASS: ${assertions} scenario groups — migration, daily limits, job locks, passive income, bankruptcy-free loans, hospital, all park outcomes, vehicle unlock, cross-followers, purchases, trading, roulette odds, defeat, movement, invulnerability, ten-tier combat, boss patterns`,
-);
+test("survival boss clocks, upgrade pauses, evolution, dodge and death", () => {
+  const a = new CatSurvival({ hp: 80, attack: 8, defense: 1 }, 0, 1, () => 0.5);
+  a.time = 59.99;
+  a.spawnClock = 99;
+  a.update(0.02, {});
+  assert.ok(a.midSpawned);
+  assert.equal(a.finalSpawned, false);
+  a.time = 179.99;
+  a.update(0.02, {});
+  assert.ok(a.finalSpawned);
+  a.gainXP(100);
+  const time = a.time;
+  a.update(1, {});
+  assert.equal(a.time, time);
+  assert.equal(a.choice.length, 3);
+  a.choose(0);
+  a.weapons[0] = 5;
+  a.passives.power = 3;
+  assert.ok(a.evolved(0));
+  a.choice = null;
+  a.dodge();
+  a.hit(1000);
+  assert.equal(a.player.hp, 80);
+  a.player.inv = 0;
+  a.hit(1000);
+  assert.ok(a.lost);
+});
+test("boss clock advances during hit-stop but stays paused during level choices", () => {
+  const a = new CatSurvival({ hp: 80, attack: 8, defense: 1 }, 0, 1, () => .5);
+  a.time = 179.99; a.hitStop = 1; a.update(.02, {});
+  assert.ok(a.finalSpawned); assert.ok(a.time >= 180);
+  a.choice = a.options(); const t = a.time; a.update(1, {}); assert.equal(a.time, t);
+});
+function seeded(n) {
+  return () => {
+    n = (n * 1664525 + 1013904223) >>> 0;
+    return n / 4294967296;
+  };
+}
+test("all three maps run through 1-minute/3-minute boss events and clear by combat", () => {
+  for (let map = 0; map < 3; map++) {
+    const a = new CatSurvival(
+      { hp: 700, attack: 25, defense: 10 },
+      map,
+      1,
+      seeded(map + 1),
+    );
+    let frames = 0;
+    while (!a.won && !a.lost && a.time < 260 && frames++ < 22000) {
+      if (a.choice) {
+        const preferred = a.choice.findIndex(
+          (c) => c.kind === "weapon" && (c.id === 1 || c.id === 3),
+        );
+        a.choose(preferred < 0 ? 0 : preferred);
+      }
+      const p = a.player,
+        angle = a.time * 0.06,
+        target = {
+          x: 1200 + Math.cos(angle) * 230,
+          y: 900 + Math.sin(angle) * 230,
+        };
+      a.update(1 / 30, {
+        right: p.x < target.x - 4,
+        left: p.x > target.x + 4,
+        down: p.y < target.y - 4,
+        up: p.y > target.y + 4,
+      });
+    }
+    assert.ok(a.midSpawned);
+    assert.ok(a.finalSpawned);
+    assert.ok(a.won, "map " + map);
+    assert.ok(a.bossKills.length >= 2);
+    assert.ok(a.kills > 100);
+    assert.ok(a.level > 5);
+  }
+});
+console.log(`PASS ${count} v3 scenario groups`);
