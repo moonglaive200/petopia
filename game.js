@@ -73,7 +73,7 @@ function gameShell(content, back = renderHome) {
   cleanupView();
   const s = player();
   document.body.dataset.screen = "game";
-  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${back === showSlots ? dailyEventPanel(s) : ""}${content}${back === showSlots ? `<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="mart">▤ 펫마트</button><button data-utility="inventory">▤ 인벤토리</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton" ${!E.canSleep(s) ? "disabled" : ""} title="주인 기력 25 이하에서 잠들 수 있어">☾ 잠자기 · 기력 25 이하</button><button data-utility="settings">⚙ 설정</button></nav>` : ""}<section class="activity-journal" aria-label="냥생 기록"><h2>냥생 기록</h2><div class="daily-log" id="activityLog"></div></section></section>`;
+  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${back === showSlots ? dailyEventPanel(s) : ""}${content}${back === showSlots ? `<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="mart">▤ 펫마트</button><button data-utility="inventory">▤ 인벤토리</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton" ${!E.canSleep(s) ? "disabled" : ""} title="주인 기력 25 이하에서 잠들 수 있어">☾ 잠자기 · 기력 25 이하</button><button data-utility="settings">⚙ 설정</button></nav>` : ""}<section class="activity-journal" aria-label="냥생 기록"><h2>냥생 기록</h2><div class="daily-log" id="activityLog"></div></section>${back === showSlots ? guidePanel() : ""}</section>`;
   document.querySelector(".save-label").textContent =
     `SLOT ${selectedSlot + 1}${s.ownerName ? " · " + s.ownerName + " 집사" : ""}`;
   document.querySelector("#gameBack").onclick = () => {
@@ -161,7 +161,7 @@ function renderHome() {
         ([id, icon, name, desc]) =>
           `<button class="activity ${["dungeon", "romance"].includes(id) ? "adventure" : ""}" data-menu="${id}"><span class="activity-icon">${icon}</span><span><strong>${name}</strong><small>${desc}</small></span><span class="arrow">↗</span></button>`,
       )
-      .join("")}</nav>${guidePanel()}`,
+      .join("")}</nav>`,
     showSlots,
   );
   const actions = {
