@@ -2522,7 +2522,7 @@ progress::-webkit-progress-value {
 .activity.adventure .activity-icon {
   color: #f0d2a0;
 }
-.activity-grid.six-activities .activity {
+.activity-grid.eight-activities .activity {
   grid-column: auto;
 }
 .tip-banner,
@@ -2650,7 +2650,7 @@ select {
 }
 .screen-tools {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   padding-top: 24px;
   margin-top: 24px;

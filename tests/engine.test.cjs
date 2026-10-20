@@ -332,7 +332,7 @@ test("partial survival rewards, casino unlock and replay protection", () => {
     bossKills: [0],
     won: false,
   });
-  assert.ok(r.gold > 100);
+  assert.equal(r.gold, 44);
   assert.ok(r.xp > 0);
   assert.equal(s.bossCleared, true);
   assert.equal(s.hospital, true);
@@ -580,5 +580,19 @@ test("bomb pickup clears nearby regular enemies, damages bosses and preserves di
     false,
   );
   assert.ok(a.event.includes("폭탄"));
+});
+test("survival clear gold is reduced to twenty percent while XP and partner identity remain intact", () => {
+  const s = fresh();
+  s.expedition = { id: "clear" };
+  const r = E.settleSurvival(s, {
+    id: "clear",
+    time: 180,
+    kills: 100,
+    bossKills: [1, 2],
+    won: true,
+  });
+  assert.equal(r.gold, 210);
+  assert.equal(r.xp, 452);
+  assert.equal(E.partners[2].name, "백설냥이");
 });
 console.log(`PASS ${count} v4 scenario groups`);

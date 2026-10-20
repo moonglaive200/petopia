@@ -214,7 +214,7 @@
   const partners = [
     { name: "치즈냥이", row: 0, likes: 0 },
     { name: "턱시도냥이", row: 1, likes: 1 },
-    { name: "흰색냥이", row: 2, likes: 2 },
+    { name: "백설냥이", row: 2, likes: 2 },
   ];
   const bossNames = [
     "조커의남자",
@@ -1011,16 +1011,17 @@
     if (!s.expedition || s.expedition.id !== run.id) return null;
     const gold = reward(
         s,
-        Math.max(
-          5,
-          Math.floor(
-            run.time * 0.7 +
-              run.kills * 2 +
-              run.bossKills.length * 100 +
-              (run.bonusGold || 0) +
-              (run.won ? 350 : 0),
+        0.2 *
+          Math.max(
+            5,
+            Math.floor(
+              run.time * 0.7 +
+                run.kills * 2 +
+                run.bossKills.length * 100 +
+                (run.bonusGold || 0) +
+                (run.won ? 350 : 0),
+            ),
           ),
-        ),
       ),
       xp = Math.floor(run.time * 0.4 + run.kills * 2 + (run.won ? 180 : 0)),
       levels = gainXP(s, xp);

@@ -8,7 +8,9 @@ with sync_playwright() as p:
  def seed(**values):
   s=state();s.update({'event':None,'eventDay':s['day'],'weather':'sun'});s.update(values);page.evaluate('(s)=>localStorage.setItem("petopia.slots",JSON.stringify([s]))',s);home()
  def menu(key):page.locator(f'[data-menu="{key}"]').click()
- def utility(key):page.locator(f'[data-utility="{key}"]').click()
+ def utility(key):
+  if key in ["mart","bank"]:home();menu(key)
+  else:page.locator(f'[data-utility="{key}"]').click()
  def back():page.locator('#gameBack').click()
  def close_modal():
   page.locator('dialog .btn').click();page.wait_for_timeout(100)
@@ -16,7 +18,7 @@ with sync_playwright() as p:
  page.locator('[data-slot="0"]').click();page.locator('#ownerName').fill('승식');page.locator('#ownerNext').click();assert page.locator('.character:disabled').count()==1;page.locator('#chunbae').click()
  assert page.locator('.intro-panel .shivering').is_visible()
  for _ in range(6):page.locator('#nextIntro').click()
- assert state()['introSeen'];assert page.locator('[data-menu]').count()==6;assert page.locator('.game-top #dayButton').count()==0
+ assert state()['introSeen'];assert page.locator('[data-menu]').count()==8;assert page.locator('.game-top #dayButton').count()==0
  menu('influencer');assert state()['energy']==100;page.locator('[data-social="star"]').click();assert state()['energy']==100
  page.locator('#postStar').click();assert state()['energy']==75;assert state()['daily']['star']==1;assert page.locator('#postStar').is_disabled()
  back();page.locator('[data-social="live"]').click();page.locator('#startLive').click();assert state()['energy']==75
