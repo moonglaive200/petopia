@@ -16,8 +16,8 @@ with sync_playwright() as p:
  page.locator('[data-menu="work"]').click();assert page.locator('[data-job="1"]').count()==0;assert page.locator('[data-promote="staff:0"]').is_disabled();assert '주인 승진 필요' in page.locator('[data-promote="staff:0"]').inner_text()
  page.evaluate('renderHome()');page.locator('[data-menu="mart"]').click();assert page.locator('[data-buy="toy:0"]').count()==0;page.locator('[data-forge="toy"]').click();assert page.locator('[data-buy]').count()==10
  page.locator('[data-mart="vehicle"]').click();assert '🚗' in page.locator('.equipment-icon').first.inner_text();assert '다이아 +5' in page.locator('.shop-card').nth(2).inner_text()
- page.evaluate('renderHome()');page.locator('[data-menu="bank"]').click();assert page.locator('.portfolio').is_visible();page.locator('[data-bank="spend"]').click();assert '−99%' in page.locator('[data-invest="stock"]').inner_text()
- page.evaluate('''()=>{const s=player();s.earned={gold:1234,diamonds:4};s.dayStart={gold:s.gold,diamonds:s.diamonds,fans:s.followers+s.liveFollowers-12,affection:2.5};renderHome();}''')
+ page.evaluate('renderHome()');page.locator('[data-menu="bank"]').click();assert page.locator('.portfolio').is_visible();page.locator('[data-bank="spend"]').click();assert '1G 이하' in page.locator('[data-invest="stock"]').inner_text()
+ page.evaluate('''()=>{const s=player();s.energy=25;s.earned={gold:1234,diamonds:4};s.dayStart={gold:s.gold,diamonds:s.diamonds,fans:s.followers+s.liveFollowers-12,affection:2.5};renderHome();}''')
  page.locator('#dayButton').click();assert page.locator('.scene-sleep').is_visible();page.locator('dialog .btn').click();assert '전날 번 금화' in page.locator('.day-deltas').inner_text();assert '호감도' in page.locator('.day-deltas').inner_text();page.locator('#startNewDay').click()
  page.evaluate('''()=>{const s=player();s.energy=100;s.daily.dungeon=0;s.hospital=false;renderDungeons();const original=CatSurvival.prototype.update;CatSurvival.prototype.update=function(dt,input){window.testArena=this;return original.call(this,dt,input)};}''')
  assert page.locator('#survivalMap option').count()==10;assert page.locator('#survivalMap option:disabled').count()==7

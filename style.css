@@ -4186,3 +4186,83 @@ dialog {
     transition: none;
   }
 }
+
+.listing-status {
+  display: block;
+  color: #a13b32 !important;
+  line-height: 1.5;
+  margin-top: 5px;
+  font-weight: bold;
+}
+.market-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.market-row:has(.listing-status) {
+  background: #f5dcc6;
+}
+
+.house-7 {
+  background: linear-gradient(
+    #9280b9 0%,
+    #d7a6c9 55%,
+    #f7d5a3 56%,
+    #e8b887 100%
+  ) !important;
+}
+.house-7 .window-pixel {
+  background: linear-gradient(#675b9b, #d3a5cd) !important;
+  border: 7px solid #f6dfa4;
+  box-shadow: 0 0 0 3px #a78456;
+}
+.house-7 .wall-picture {
+  color: #fff0a2;
+  text-shadow: 0 0 18px #fff6c4;
+  font-size: 42px;
+}
+.house-7 .floor-rug {
+  background: #c88eae;
+  border: 4px solid #ffe5a5;
+  box-shadow: 0 0 0 3px #ab7294;
+}
+.house-7 .stage-label {
+  color: #563447;
+  background: #ffefcfcc;
+  padding: 5px 9px;
+  border-radius: 5px;
+}
+
+.market-order {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.market-row .trade-capacity {
+  margin: 0;
+  line-height: 1.5;
+  color: #704d2f;
+  font-size: 12px;
+  min-width: 65px;
+}
+.trade-capacity strong {
+  color: #46301f;
+  font-size: 14px;
+}
+.market-row > span {
+  flex: 1;
+  min-width: 120px;
+}
+@media (max-width: 650px) {
+  .market-row .market-order {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+  }
+  .market-row .trade-capacity {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .market-row > span {
+    flex-basis: 45%;
+  }
+}

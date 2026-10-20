@@ -8,6 +8,10 @@ const test = (name, fn) => {
   count++;
   console.log("✓", name);
 };
+const advance = (s) => {
+  s.energy = Math.min(s.energy, 25);
+  return E.nextDay(s);
+};
 const fresh = (o = {}) =>
   E.normalize({
     character: "chunbae",
@@ -60,10 +64,10 @@ test("catalog price multipliers, ten toys and house waking values", () => {
   assert.equal(E.jobs[0].hire, 5500);
   assert.equal(E.buildings[0].cost, 18000);
   assert.equal(E.companies[0].cost, 900000);
-  assert.equal(E.houses[1].cost, 3500);
+  assert.equal(E.houses[1].cost, 5000);
   assert.deepEqual(
     E.houses.map((x) => x.wake),
-    [-10, -5, 0, 3, 6, 9, 12],
+    [-10, -5, 0, 3, 6, 9, 12, 15],
   );
 });
 test("daily limits, exact owner energy and no recovery from hospital", () => {
@@ -78,7 +82,7 @@ test("daily limits, exact owner energy and no recovery from hospital", () => {
   s.hospital = true;
   E.heal(s);
   assert.equal(s.energy, 0);
-  E.nextDay(s);
+  advance(s);
   assert.equal(s.energy, 100);
   assert.equal(s.daily.dungeon, 0);
 });
@@ -96,11 +100,11 @@ test("influencer entry cost is paid once in either order", () => {
     assert.equal(s.energy, 75);
     assert.equal(E.useInfluence(s, "star"), false);
     assert.equal(E.useInfluence(s, "live"), false);
-    E.nextDay(s);
+    advance(s);
     assert.equal(E.useInfluence(s, "live"), false);
     assert.ok(E.useInfluence(s, "star"));
-    E.nextDay(s);
-    E.nextDay(s);
+    advance(s);
+    advance(s);
     assert.ok(E.useInfluence(s, "live"));
   }
 });
@@ -111,7 +115,7 @@ test("normalization does not replenish energy or treat shop stock", () => {
   for (let i = 0; i < 10; i++) E.normalize(s);
   assert.equal(s.energy, 12);
   assert.equal(s.treatStock[0], 0);
-  E.nextDay(s);
+  advance(s);
   assert.ok(s.treatStock.every((n) => n >= 0 && n <= 2));
   assert.equal(s.energy, 100);
 });
@@ -219,7 +223,7 @@ test("work ten-level progression, house/car perks, free activities during work",
   assert.equal(E.promote(s, 0), false);
   const old = s.gold,
     pay = E.jobPay(s, 0) + E.jobPay(s, 0, true);
-  E.nextDay(s);
+  advance(s);
   assert.equal(s.workDays[0], 3);
   assert.equal(s.gold, old + pay);
   assert.equal(s.daily.work, 0);
@@ -234,14 +238,14 @@ test("daily company stock, passive income, housing mood and visible deltas settl
     buildings: [0],
     romance: { kind: 1, stage: 2, affection: 6, since: 1 },
   });
-  E.nextDay(s);
+  advance(s);
   assert.equal(s.stocks[0], 1);
-  assert.equal(s.gold, 100 + 110 + 45 + 20);
+  assert.equal(s.gold, 100 + 9000 + 360 + 20);
   assert.equal(s.happiness, 86);
   assert.deepEqual(s.lastDayDelta, {
     day: 2,
-    gold: 175,
-    netGold: 175,
+    gold: 9380,
+    netGold: 9380,
     diamonds: 0,
     energy: 75,
     happiness: 6,
@@ -250,31 +254,40 @@ test("daily company stock, passive income, housing mood and visible deltas settl
   });
   E.normalize(s);
   assert.equal(s.stocks[0], 1);
-  E.nextDay(s);
+  advance(s);
   assert.equal(s.stocks[0], 2);
 });
 test("daily market ranges stay positive and within advertised bounds", () => {
   const s = fresh();
   for (let day = 0; day < 50; day++) {
     const before = structuredClone(s.market);
-    E.nextDay(s);
+    const statuses = structuredClone(s.marketStatus);
+    advance(s);
     for (let i = 0; i < 10; i++) {
+      if (statuses.stock[i] || s.marketStatus.stock[i]) continue;
       const ratio = s.market.stock[i] / before.stock[i];
-      assert.ok(ratio >= 0.7 - 1e-9 && ratio <= 1.3 + 1e-9);
+      assert.ok(
+        ratio >= 0.7 - 0.5 / before.stock[i] - 1e-9 &&
+          ratio <= 1.3 + 0.5 / before.stock[i] + 1e-9,
+      );
     }
     for (let i = 0; i < 3; i++) {
+      if (statuses.coin[i] || s.marketStatus.coin[i]) continue;
       const ratio = s.market.coin[i] / before.coin[i];
-      assert.ok(ratio >= 0.01 - 1e-9 && ratio <= 3 + 1e-9);
+      assert.ok(
+        ratio >= 0.01 - 0.5 / before.coin[i] - 1e-9 &&
+          ratio <= 3 + 0.5 / before.coin[i] + 1e-9,
+      );
       assert.ok(s.market.coin[i] >= 1);
     }
   }
 });
 test("loan maturity allows negative balances; treatment never restores owner energy", () => {
   const s = fresh({ gold: 0, energy: 0 });
-  assert.ok(E.takeLoan(s, 200));
+  assert.ok(E.takeLoan(s, 100));
   s.gold = 0;
-  for (let i = 0; i < 5; i++) E.nextDay(s);
-  assert.equal(s.gold, -220);
+  for (let i = 0; i < 5; i++) advance(s);
+  assert.equal(s.gold, -200);
   s.hospital = true;
   s.energy = 0;
   const h = E.heal(s);
@@ -497,6 +510,8 @@ test("average cost, realized loss and automatic liquidation", () => {
   s.market.stock[0] = 1;
   const report = [];
   E.liquidate(s, report);
+  assert.equal(s.stocks[0], 3);
+  advance(s);
   assert.equal(s.stocks[0], 0);
   assert.ok(report.length);
 });
@@ -594,5 +609,118 @@ test("survival clear gold is reduced to twenty percent while XP and partner iden
   assert.equal(r.gold, 210);
   assert.equal(r.xp, 452);
   assert.equal(E.partners[2].name, "백설냥이");
+});
+test("global price crash halts trade, wipes next day, and relists exactly day three without restoring holdings", () => {
+  for (const type of ["stock", "coin"])
+    for (const low of [0, 1]) {
+      const s = fresh({ gold: 100000, companies: type === "stock" ? [0] : [] });
+      E.trade(s, type, 0, "buy", 2);
+      const book = type === "stock" ? s.stocks : s.coinHoldings,
+        cost = s.costBasis[type][0];
+      s.market[type][0] = low;
+      E.normalize(s);
+      assert.equal(E.listing(s, type, 0).relistDay, 4);
+      assert.equal(book[0], 2);
+      for (let i = 0; i < 3; i++) E.normalize(s);
+      assert.equal(E.listing(s, type, 0).crashedDay, 1);
+      assert.equal(E.trade(s, type, 0, "sell", 1), false);
+      assert.equal(E.trade(s, type, 0, "buy", 1), false);
+      advance(s);
+      assert.equal(book[0], 0);
+      assert.equal(s.realized[type], -cost);
+      assert.ok(s.dayReport.some((t) => t.includes("상장폐지")));
+      advance(s);
+      assert.equal(s.market[type][0], low);
+      assert.equal(s.realized[type], -cost);
+      advance(s);
+      assert.equal(E.listing(s, type, 0), null);
+      assert.equal(
+        s.market[type][0],
+        type === "stock" ? E.companies[0].stock : E.coins[0].base,
+      );
+      assert.equal(book[0], 0);
+      assert.ok(E.trade(s, type, 0, "buy", 1));
+    }
+});
+test("personal loss alone no longer delists an actively priced asset", () => {
+  const s = fresh({
+    stocks: { 0: 1 },
+    costBasis: { stock: { 0: 100000 }, coin: {} },
+  });
+  s.market.stock[0] = 100;
+  E.liquidate(s);
+  assert.equal(s.stocks[0], 1);
+  assert.equal(E.listing(s, "stock", 0), null);
+});
+test("a low-price stock can naturally reach one G through a rounded daily fall", () => {
+  const s = fresh();
+  s.market.stock[0] = 2;
+  const original = Math.random;
+  try {
+    Math.random = () => 0;
+    advance(s);
+  } finally {
+    Math.random = original;
+  }
+  assert.equal(s.market.stock[0], 1);
+  assert.equal(E.listing(s, "stock", 0).crashedDay, 2);
+  assert.equal(E.listing(s, "stock", 0).relistDay, 5);
+});
+test("nine buildings yield two percent, companies one percent, and sleep enforces energy threshold", () => {
+  assert.equal(E.buildings.length, 9);
+  assert.equal(Math.max(...E.buildings.map((b) => b.cost)), 1000000);
+  for (const b of E.buildings) assert.equal(b.income, b.cost * 0.02);
+  for (const c of E.companies) assert.equal(c.income, c.cost * 0.01);
+  const s = fresh({ energy: 26 });
+  assert.equal(E.nextDay(s), null);
+  assert.equal(s.day, 1);
+  assert.equal(s.energy, 26);
+  s.energy = 25;
+  assert.ok(E.nextDay(s));
+  assert.equal(s.day, 2);
+  assert.equal(s.energy, 100);
+  assert.equal(E.nextDay(s), null);
+});
+test("loan caps are halved; maturity charges fifty percent or one hundred once with no ongoing debt", () => {
+  assert.equal(E.loanLimit(fresh()), 100);
+  assert.equal(E.loanLimit(fresh({ level: 3 })), 250);
+  const enough = fresh({ gold: 0 });
+  assert.equal(E.takeLoan(enough, 101), false);
+  assert.ok(E.takeLoan(enough, 100));
+  enough.gold = 150;
+  for (let i = 0; i < 5; i++) advance(enough);
+  assert.equal(enough.gold, 0);
+  assert.equal(enough.loans.length, 0);
+  assert.ok(enough.dayReport.some((t) => t.includes("50%")));
+  const short = fresh({ gold: 0 });
+  E.takeLoan(short, 100);
+  short.gold = 149;
+  for (let i = 0; i < 5; i++) advance(short);
+  assert.equal(short.gold, -51);
+  assert.equal(short.loans.length, 0);
+  assert.ok(short.dayReport.some((t) => t.includes("100%")));
+  for (let i = 0; i < 10; i++) advance(short);
+  assert.equal(short.gold, -51);
+});
+test("eight house tiers cap at one million and require diamonds for the last two without charging old ownership", () => {
+  assert.deepEqual(
+    E.houses.map((h) => h.cost),
+    [0, 5000, 15000, 45000, 120000, 300000, 600000, 1000000],
+  );
+  assert.deepEqual(
+    E.houses.map((h) => h.diamond),
+    [0, 0, 0, 0, 0, 0, 30, 80],
+  );
+  const s = fresh({ gold: 1000000, diamonds: 79, houses: [0, 6] });
+  assert.equal(E.purchase(s, "house", 7), false);
+  assert.equal(s.gold, 1000000);
+  assert.equal(s.diamonds, 79);
+  s.diamonds = 80;
+  assert.ok(E.purchase(s, "house", 7));
+  assert.equal(s.gold, 0);
+  assert.equal(s.diamonds, 0);
+  assert.equal(s.house, 7);
+  assert.ok(E.purchase(s, "house", 6));
+  assert.equal(s.diamonds, 0);
 });
 console.log(`PASS ${count} v4 scenario groups`);

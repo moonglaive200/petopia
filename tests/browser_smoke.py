@@ -47,7 +47,7 @@ with sync_playwright() as p:
  seed(romance={'kind':2,'affection':10,'stage':3,'since':1});menu('romance');assert page.locator('#breakUp').count()==0;assert page.locator('#switchPartner').count()==0
  seed(romance={'kind':0,'affection':2,'stage':0,'since':1},candidate=2);menu('romance');page.locator('#switchPartner').click();assert state()['romance']['affection']==0;assert state()['romance']['kind']==2;page.locator('#breakUp').click();assert state()['romance'] is None
  # Finance, company daily share and medical energy invariance.
- seed(house=0,companies=[],buildings=[],romance=None,gold=1000000,energy=50,workDays=[2,0,0],employees=[],workLevels=[1,1,1],staffLevels=[1,1,1])
+ seed(house=0,companies=[],buildings=[],romance=None,gold=1000000,energy=25,workDays=[2,0,0],employees=[],workLevels=[1,1,1],staffLevels=[1,1,1])
  utility('bank');page.locator('[data-bank="spend"]').click();page.locator('[data-invest="coin"]').click();assert '200%' in page.locator('.desc').inner_text();back();page.locator('[data-invest="stock"]').click();assert '30%' in page.locator('.desc').inner_text();page.locator('[data-trade="0:buy"]').click();assert state()['stocks']['0']==1
  back();page.locator('[data-invest="company"]').click();page.locator('[data-buy="company:0"]').click();assert 0 in state()['companies']
  home();menu('work');page.locator('[data-promote="owner:0"]').click();assert state()['workLevels'][0]==2;page.locator('[data-hire="0"]').click();assert 0 in state()['employees'];page.locator('[data-promote="staff:0"]').click();assert state()['staffLevels'][0]==2
@@ -69,5 +69,5 @@ with sync_playwright() as p:
  for key in ['mart','bank','hospital']:
   utility(key);assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),key;back()
  assert not errors,errors
- print('PASS: real new-game intro, six menus, shared influencer cost, animated Live choices, work freedom/cutscene, day report, finite stock/toys/vehicles, romance gifts/confession/marriage/switch/permanence, prices/income, hospital energy, arcade/HEX, survival/pause/rewards, mobile; no JS errors')
+ print('PASS: real new-game intro, eight menus, shared influencer cost, animated Live choices, work freedom/cutscene, day report, finite stock/toys/vehicles, romance gifts/confession/marriage/switch/permanence, prices/income, hospital energy, arcade/HEX, survival/pause/rewards, mobile; no JS errors')
  b.close()

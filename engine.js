@@ -192,9 +192,18 @@
   vehicles[0].text = "자동차+썸냥이로 드라이브 해금 · 주인 일당 ×1.10";
   vehicles[1].text = "드라이브 다이아 +1 · 주인 일당 ×1.15";
   vehicles[2].text = "드라이브 다이아 +5 · 주인 일당 ×1.25";
+  houses.push({
+    name: "춘배의 천상궁전",
+    cost: 1000000,
+    work: 0.5,
+    staff: 0.3,
+    discount: 0.25,
+    energy: 0,
+  });
   houses.forEach((h, i) => {
-    h.cost *= 10;
-    h.wake = [-10, -5, 0, 3, 6, 9, 12][i];
+    h.cost = [0, 5000, 15000, 45000, 120000, 300000, 600000, 1000000][i];
+    h.diamond = i === 6 ? 30 : i === 7 ? 80 : 0;
+    h.wake = i < 3 ? [-10, -5, 0][i] : (i - 2) * 3;
     h.energy = 0;
   });
   houses[0].name = "집사랑 노숙 중";
@@ -203,6 +212,15 @@
     j.cost = 50;
   });
   buildings.forEach((b) => (b.cost *= 10));
+  [
+    ["캣닢 백화점", 180000],
+    ["냐옹 복합몰", 260000],
+    ["집사 금융센터", 380000],
+    ["골골랜드 호텔", 540000],
+    ["냥세권 메가타워", 740000],
+    ["춘배월드 본사", 1000000],
+  ].forEach(([name, cost]) => buildings.push({ name, cost }));
+  buildings.forEach((b) => (b.income = Math.round(b.cost * 0.02)));
   companies.forEach((c) => (c.cost *= 10));
   companies.forEach((c, i) => {
     c.stock = [1800, 750, 950, 2200, 1600, 2100, 650, 1200, 180, 350][i];
@@ -210,6 +228,7 @@
       900000, 480000, 560000, 1200000, 1000000, 1300000, 450000, 850000, 110000,
       220000,
     ][i];
+    c.income = Math.round(c.cost * 0.01);
   });
   const partners = [
     { name: "치즈냥이", row: 0, likes: 0 },
@@ -317,6 +336,7 @@
       realized: { stock: 0, coin: 0 },
       dayStart: null,
       previousMarket: null,
+      marketStatus: { stock: {}, coin: {} },
     };
     for (const [k, v] of Object.entries(d))
       if (s[k] === undefined) s[k] = structuredClone(v);
@@ -344,6 +364,7 @@
         if (q && s.costBasis[type][i] === undefined)
           s.costBasis[type][i] = price(s, type, +i) * q;
     }
+    syncMarketListings(s);
     if (!s.dayStart) s.dayStart = daySnapshot(s);
     if (s.eventDay !== s.day) rollDay(s);
     s.energy = Math.max(0, Math.min(100, s.energy));
@@ -507,7 +528,7 @@
     return s.loans.reduce((a, l) => a + l.amount, 0);
   }
   function loanLimit(s) {
-    return 200 + (s.level - 1) * 150;
+    return Math.floor((200 + (s.level - 1) * 150) / 2);
   }
   function takeLoan(s, amount, medical = false) {
     if (
@@ -765,9 +786,13 @@
     s.candidate = null;
     return true;
   }
+  function canSleep(s) {
+    return s.energy <= 25 && !s.expedition && !s.arcadeSession;
+  }
   function nextDay(s) {
-    if (s.expedition || s.arcadeSession) return null;
+    if (!canSleep(s)) return null;
     const dayOpening = s.dayStart || daySnapshot(s);
+    syncMarketListings(s);
     const before = {
       gold: s.gold,
       diamonds: s.diamonds,
@@ -791,6 +816,10 @@
     for (const i of s.buildings) income += buildings[i].income;
     for (const i of s.companies) {
       income += companies[i].income;
+      if (listing(s, "stock", i)) {
+        report.push(`${companies[i].name} 거래 정지 중 · 주식 지급 보류`);
+        continue;
+      }
       s.stocks[i] = (s.stocks[i] || 0) + 1;
       s.costBasis.stock[i] = (s.costBasis.stock[i] || 0) + price(s, "stock", i);
       report.push(`${companies[i].name} 주식 +1주`);
@@ -814,24 +843,20 @@
     s.previousMarket = structuredClone(s.market);
     for (const type of ["stock", "coin"])
       s.market[type] = s.market[type].map((old, i) => {
+        if (listing(s, type, i)) return old;
         const u = Math.random(),
           change = type === "stock" ? u * 0.6 - 0.3 : u * 2.99 - 0.99;
-        return old <= 0
-          ? 0
-          : Math.max(
-              Math.ceil(old * (type === "stock" ? 0.7 : 0.01)),
-              Math.min(
-                1e9,
-                Math.floor(old * (type === "stock" ? 1.3 : 3)),
-                Math.round(old * (1 + change)),
-              ),
-            );
+        return Math.max(0, Math.min(1e9, Math.round(old * (1 + change))));
       });
     liquidate(s, report);
     for (const l of s.loans.filter((l) => l.due <= s.day)) {
-      const paid = Math.ceil(l.amount * 1.1 - 1e-8);
+      const normal = Math.ceil(l.amount * 1.5 - 1e-8),
+        late = s.gold < normal;
+      const paid = late ? l.amount * 2 : normal;
       s.gold -= paid;
-      report.push(`${l.source} 상환 −${paid} G`);
+      const text = `${l.source} ${late ? "미상환 이자 100%" : "정상 이자 50%"} · 총 −${paid} G · 대출 종료, 추가 이자 없음`;
+      report.push(text);
+      log(s, text);
     }
     s.loans = s.loans.filter((l) => l.due > s.day);
     s.energy = 100;
@@ -971,6 +996,8 @@
       return false;
     const list = type === "stock" ? companies : coins;
     if (!list[i]) return false;
+    syncMarketListings(s);
+    if (listing(s, type, i)) return false;
     const book = type === "stock" ? s.stocks : s.coinHoldings,
       p = price(s, type, i),
       held = book[i] || 0;
@@ -989,23 +1016,57 @@
     }
     return true;
   }
-  function liquidate(s, report = []) {
+  function listing(s, type, i) {
+    return s.marketStatus?.[type]?.[i] || null;
+  }
+  function syncMarketListings(s, report = []) {
+    s.marketStatus ??= { stock: {}, coin: {} };
     for (const type of ["stock", "coin"]) {
-      const book = type === "stock" ? s.stocks : s.coinHoldings;
-      for (const [i, q] of Object.entries(book))
-        if (q > 0) {
-          const value = price(s, type, +i) * q,
-            cost = s.costBasis[type][i] || 0;
-          if (value === 0 || (cost > 0 && value <= cost * 0.01)) {
-            s.realized[type] -= cost;
-            book[i] = 0;
-            s.costBasis[type][i] = 0;
-            report.push(
-              `${(type === "stock" ? companies : coins)[i].name} −99%/0G 자동청산 · 전량 소멸`,
-            );
-          }
+      s.marketStatus[type] ??= {};
+      const items = type === "stock" ? companies : coins,
+        book = type === "stock" ? s.stocks : s.coinHoldings;
+      items.forEach((item, i) => {
+        let state = listing(s, type, i);
+        const announce = (text) => {
+          report.push(text);
+          log(s, text);
+        };
+        if (!state && price(s, type, i) <= 1) {
+          state = s.marketStatus[type][i] = {
+            crashedDay: s.day,
+            delistDay: s.day + 1,
+            relistDay: s.day + 3,
+            delisted: false,
+          };
+          announce(
+            `${item.name} ${price(s, type, i)}G · 거래 정지! ${dateLabel(state.delistDay)} 보유분 상장폐지, ${dateLabel(state.relistDay)} 기본가격 재상장`,
+          );
         }
+        if (!state) return;
+        if (!state.delisted && s.day >= state.delistDay) {
+          const qty = book[i] || 0,
+            cost = s.costBasis[type][i] || 0;
+          s.realized[type] -= cost;
+          book[i] = 0;
+          s.costBasis[type][i] = 0;
+          state.delisted = true;
+          announce(
+            `${item.name} 상장폐지 · 보유 ${qty}${type === "stock" ? "주" : "개"} 전량 소멸 · 보상 없음`,
+          );
+        }
+        if (s.day >= state.relistDay) {
+          s.market[type][i] = type === "stock" ? item.stock : item.base;
+          if (s.previousMarket) s.previousMarket[type][i] = s.market[type][i];
+          delete s.marketStatus[type][i];
+          announce(
+            `${item.name} 기본가격 ${s.market[type][i]}G로 재상장 · 새로 매수 가능, 이전 보유분 복구 없음`,
+          );
+        }
+      });
     }
+  }
+  function liquidate(s, report = []) {
+    syncMarketListings(s, report);
   }
   function settleSurvival(s, run) {
     if (!s.expedition || s.expedition.id !== run.id) return null;
@@ -1096,6 +1157,8 @@
     jobUnlocked,
     fameBonus,
     liquidate,
+    listing,
+    syncMarketListings,
     weapons,
     armors,
     treats,
@@ -1143,6 +1206,7 @@
     switchPartner,
     breakUp,
     nextDay,
+    canSleep,
     park,
     drive,
     addFollowers,
