@@ -211,7 +211,7 @@ function settings() {
 }
 function showSlots() {
   document.body.dataset.screen = "slots";
-  app.innerHTML = `<section class="panel"><button class="back" id="back">← 로비로</button><div class="eyebrow">THREE LITTLE STORIES</div><h1>어떤 냥생을 이어갈까?</h1><p class="desc">세 개의 자리, 각자 다른 우리의 일상.</p><div class="cards">${[0, 1, 2].map((i) => `<button class="slot" data-slot="${i}"><small>SLOT 0${i + 1}</small><span class="plus">${slots[i] ? "🐾" : "+"}</span><strong>${slots[i] ? "춘배의 일상" : "새로운 이야기"}</strong><p>${slots[i] ? `DAY ${slots[i].day || 1} · LV.${slots[i].level || 1}` : "비어 있는 슬롯"}</p></button>`).join("")}</div><p class="note">✦ 자동 저장 · 설정에서 저장 파일 백업 가능</p></section>`;
+  app.innerHTML = `<section class="panel"><button class="back" id="back">← 로비로</button><div class="eyebrow">THREE LITTLE STORIES</div><h1>어떤 냥생을 이어갈까?</h1><p class="desc">세 개의 자리, 각자 다른 우리의 일상.</p><div class="cards">${[0, 1, 2].map((i) => `<div class="slot-card"><button class="slot" data-slot="${i}"><small>SLOT 0${i + 1}</small><span class="plus">${slots[i] ? "🐾" : "+"}</span><strong>${slots[i] ? "춘배의 일상" : "새로운 이야기"}</strong><p>${slots[i] ? `DAY ${slots[i].day || 1} · LV.${slots[i].level || 1}` : "비어 있는 슬롯"}</p></button>${slots[i] ? `<button class="slot-delete" data-delete-slot="${i}" aria-label="슬롯 ${i + 1} 저장 삭제">저장 삭제</button>` : ""}</div>`).join("")}</div><p class="note">✦ 자동 저장 · 설정에서 저장 파일 백업 가능</p></section>`;
   document.querySelector("#back").onclick = lobby;
   document.querySelectorAll("[data-slot]").forEach(
     (b) =>
@@ -220,10 +220,31 @@ function showSlots() {
         slots[selectedSlot] ? room() : choose();
       }),
   );
+  document.querySelectorAll("[data-delete-slot]").forEach((button) => {
+    button.onclick = () => confirmDeleteSlot(Number(button.dataset.deleteSlot));
+  });
+}
+function confirmDeleteSlot(index) {
+  if (!slots[index]) return;
+  if (modal.open) modal.close();
+  modal.innerHTML = `<h2>슬롯 ${index + 1}을 삭제할까?</h2><div class="modal-body"><p>이 슬롯의 진행 상황과 보유 아이템이 모두 삭제돼.<br>삭제하면 되돌릴 수 없어.</p><p>다른 슬롯은 그대로 유지돼.</p></div><div class="delete-actions"><button class="btn" id="cancelSlotDelete" autofocus>취소</button><button class="btn danger" id="confirmSlotDelete">삭제하기</button></div>`;
+  modal.querySelector("#cancelSlotDelete").onclick = () => modal.close();
+  modal.querySelector("#confirmSlotDelete").onclick = () => {
+    const previous = slots[index];
+    slots[index] = null;
+    if (!save()) {
+      slots[index] = previous;
+      return;
+    }
+    modal.close();
+    showSlots();
+    document.querySelector(`[data-slot="${index}"]`).focus();
+    notice(`슬롯 ${index + 1}의 저장을 삭제했어.`);
+  };
+  modal.showModal();
 }
 function choose() {
-  app.innerHTML = `<section class="panel"><button class="back" id="back">← 슬롯 선택으로</button><h1>이야기의 주인공은?</h1><p class="desc">낮잠도 모험도, 같이 하자.</p><div class="cards characters"><button class="character" id="chunbae"><canvas id="chunbaeArt" width="48" height="48"></canvas><strong>춘배</strong><p>집사는 돈을 벌고, 나는 전설이 된다.</p><span class="badge">함께 시작하기 →</span></button><button class="character" disabled aria-label="오레오 개발 중"><canvas id="oreoArt" width="48" height="48"></canvas><strong>오레오</strong><p>냥생 준비 중. 조금만 기다려!</p><span class="badge">🔒 개발 중</span></button></div></section>`;
-  drawCat(document.querySelector("#chunbaeArt").getContext("2d"), 24, 27, 1);
+  app.innerHTML = `<section class="panel"><button class="back" id="back">← 슬롯 선택으로</button><h1>이야기의 주인공은?</h1><p class="desc">낮잠도 모험도, 같이 하자.</p><div class="cards characters"><button class="character" id="chunbae"><img id="chunbaeArt" class="character-portrait" src="assets/chunbae-base-preview.png" width="128" height="128" alt="은회색 긴 털과 연두빛 눈을 가진 춘배"><strong>춘배</strong><p>집사는 돈을 벌고, 나는 전설이 된다.</p><span class="badge">함께 시작하기 →</span></button><button class="character" disabled aria-label="오레오 개발 중"><canvas id="oreoArt" width="48" height="48"></canvas><strong>오레오</strong><p>냥생 준비 중. 조금만 기다려!</p><span class="badge">🔒 개발 중</span></button></div></section>`;
   drawCat(document.querySelector("#oreoArt").getContext("2d"), 24, 27, 1, true);
   document.querySelector("#back").onclick = showSlots;
   document.querySelector("#chunbae").onclick = () => {

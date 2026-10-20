@@ -1384,8 +1384,18 @@ body[data-screen="lobby"] .hero {
   background: #f5d59e;
 }
 .hero .version {
-  color: #f5efd4;
-  text-shadow: 1px 1px #4a6247;
+  display: inline-block;
+  margin: 24px 0 0;
+  padding: 10px 16px;
+  border: 1px solid #d8b57b;
+  border-radius: 5px;
+  background: #36271ee8;
+  color: #fff2ce;
+  font-size: 14px;
+  line-height: 1.8;
+  letter-spacing: 1px;
+  opacity: 1;
+  text-shadow: 1px 1px #1b130d;
 }
 .game-shell h1 {
   font-size: 28px;
@@ -2266,3 +2276,15 @@ dialog .setting small {
     transition: none;
   }
 }
+
+/* Keep slot deletion separate from the button that opens a save. */
+.slot-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.slot-card > .slot { width: 100%; flex: 1; }
+.slot-delete { border: 1px solid #cba38c; background: #f4e4d2; color: #884b38; border-radius: 5px; padding: 10px 6px; font-size: 12px; }
+.slot-delete:hover { background: #ecd2b9; border-color: #a66c50; }
+.delete-actions { display: flex; gap: 12px; margin-top: 24px; }
+.delete-actions .btn { flex: 1; margin-top: 0; }
+.btn.danger { background: #975a43; border-color: #7e4533; color: #fff6e4; box-shadow: 0 4px 0 #683c2d; }
+.btn.danger:hover { background: #a8674d; }
+
+.character-portrait { width: 128px; max-width: 100%; height: 128px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto 14px; }
