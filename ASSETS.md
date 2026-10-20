@@ -73,3 +73,7 @@ The following files are copied unchanged from this conversation's uploads, and a
 Other weapon effects remain synthesized, with their gain increased independently of UI/other effects. Native audio loops stop on scene cleanup and respect mute; stage music pauses during pause/upgrade selection. Default attack samples have bounded overlap. Per-direction atlas bounds fix uneven artwork spacing without editing the original image. Only the cheese row of the existing companion art is used. Slot crown jackpot and treat icons are locally authored inline SVG.
 
 - `assets/enhance-charge.mp3`: user-supplied `강화소리 2번.mp3`, copied unchanged (1.069 seconds). Plays before revealing an enhancement result; the success/destruction sound follows its ended event. Muted or blocked playback uses a matching-duration fallback.
+
+## v0.7 expedition presentation
+
+- Three expedition backdrops, ground details, auto-attack strokes and HUD are drawn locally in Canvas/CSS. The view reuses the existing approved Chunbae walk atlas and monster atlas. No new external image, font or audio assets were introduced. Optional expedition attack audio reuses the user-supplied swing clip and respects the global mute control.

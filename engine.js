@@ -279,6 +279,7 @@
       promotionDays: [0, 0, 0],
       guideDay: 0,
       guideTip: 0,
+      idleHunt: null,
       gearVersion: 0,
       gearUp: { weapon: {}, armor: {} },
       introSeen: true,
@@ -511,8 +512,12 @@
     "털깎이",
     "춘배가 아프다 ㅠㅠ",
     "냄새가 너무 나! 냥빨을 해야겠어!",
+    "주식 떡상",
+    "주식 떡락",
+    "코인 떡상",
+    "코인 떡락",
   ];
-  const eventChances = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 1, 2];
+  const eventChances = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 1, 2, 1, 1, 1, 1];
   function rollDay(s, random = Math.random) {
     s.weather = random() < 0.1 ? "rain" : "sun";
     s.eventDay = s.day;
@@ -526,6 +531,28 @@
         break;
       }
     }
+    if (s.event && s.event.id >= 12) {
+      const id = s.event.id,
+        type = id < 14 ? "stock" : "coin",
+        change = [0.3, -0.3, 2, -0.8][id - 12];
+      syncMarketListings(s);
+      s.previousMarket ??= {
+        stock: [...s.market.stock],
+        coin: [...s.market.coin],
+      };
+      // Keep the actual pre-event quotes for today's percentage display.
+      s.previousMarket[type] = [...s.market[type]];
+      let count = 0;
+      s.market[type] = s.market[type].map((quote, i) => {
+        if (listing(s, type, i)) return quote;
+        count++;
+        return Math.max(0, Math.min(1e9, Math.round(quote * (1 + change))));
+      });
+      s.event.resolved = true;
+      s.event.effect = `${type === "stock" ? "주식" : "코인"} 시장 ${change > 0 ? "+" : ""}${Math.round(change * 100)}% · 거래 가능한 ${count}종목에 즉시 적용 · 정지·상폐 종목 제외`;
+      log(s, `${events[id]} (1%) · ${s.event.effect}`);
+      syncMarketListings(s);
+    }
     if (s.event?.id === 10) {
       const loss = Math.floor(Math.max(0, s.gold) * 0.1);
       s.gold -= loss;
@@ -537,7 +564,7 @@
     }
     log(
       s,
-      `${s.weather === "rain" ? "비 오는 날 ☂ (10%)" : "맑은 날 ☀ (90%)"} · ${s.event ? events[s.event.id] + " (" + s.event.chance + "%)" : "평온한 하루 (47%)"}`,
+      `${s.weather === "rain" ? "비 오는 날 ☂ (10%)" : "맑은 날 ☀ (90%)"} · ${s.event ? events[s.event.id] + " (" + s.event.chance + "%)" : "평온한 하루 (43%)"}`,
     );
   }
   function eventIs(s, id) {

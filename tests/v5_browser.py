@@ -7,10 +7,10 @@ with sync_playwright() as p:
   if values.get('romance'):values['romance']['name']='치즈'
   page.evaluate('(o)=>{cleanupView();selectedSlot=0;slots[0]=E.normalize(o);renderHome();}',values)
  def state():return page.evaluate('structuredClone(player())')
- def menu(key):page.locator(f'[data-menu="{key}"]').click()
+ def menu(key):page.locator('[data-utility="mart"]' if key=='mart' else f'[data-menu="{key}"]').click()
  def home():page.evaluate('renderHome()')
  def close():page.locator('dialog .btn').click();page.wait_for_timeout(100)
- seed();assert page.locator('[data-menu]').count()==8;assert page.locator('[data-menu="inventory"]').count()==0;assert page.locator('.screen-tools button').count()==4
+ seed();assert page.locator('[data-menu]').count()==8;assert page.locator('[data-menu="inventory"]').count()==0;assert page.locator('.screen-tools button').count()==5
  for key in ['dungeon','walk','work','romance','influencer','gambling','mart','bank']:
   menu(key);assert page.locator('.game-shell>.activity-journal:last-child').count()==1;assert '테스트 기록' in page.locator('#activityLog').inner_text();home()
  page.locator('[data-utility="inventory"]').click();assert '인벤토리' in page.locator('h1').inner_text();home()

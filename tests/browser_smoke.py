@@ -10,7 +10,7 @@ with sync_playwright() as p:
   if s.get('romance'):s['romance']['name']='치즈'
   page.evaluate('(s)=>localStorage.setItem("petopia.slots",JSON.stringify([s]))',s);home()
  def menu(key):
-  if key=="inventory":page.locator('[data-utility="inventory"]').click()
+  if key in ["inventory","mart"]:page.locator(f'[data-utility="{key}"]').click()
   else:page.locator(f'[data-menu="{key}"]').click()
  def utility(key):
   if key in ["mart","bank"]:home();menu(key)

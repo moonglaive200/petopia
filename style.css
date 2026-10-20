@@ -4899,3 +4899,140 @@ dialog {
     animation: none !important;
   }
 }
+/* Real-time expedition and home utility layout. */
+.screen-tools {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.idle-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: #62472f;
+  color: #fff0cf;
+  border-radius: 8px;
+  margin: 18px 0;
+  line-height: 1.7;
+  font-size: 12px;
+}
+.idle-state {
+  font-weight: bold;
+  color: #d6efb7;
+}
+.idle-stage-wrap {
+  position: relative;
+  overflow: hidden;
+  border: 3px solid #7a5839;
+  border-radius: 10px;
+  background: #203c35;
+}
+#idleCanvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 86/33;
+}
+.idle-stage-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 16px;
+  background: #1a302b;
+  color: #fff0cf;
+  font-size: 13px;
+}
+.idle-stage-caption .text-button {
+  color: #e5d6ac;
+  font-size: 11px;
+}
+.idle-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.idle-dashboard > div {
+  padding: 16px 12px;
+  border: 2px solid #b48a59;
+  border-radius: 8px;
+  background: #fff0d2;
+}
+.idle-dashboard small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #815d3b;
+}
+.idle-dashboard strong {
+  display: block;
+  margin-top: 9px;
+  font-size: 20px;
+  color: #5d3c24;
+  overflow-wrap: anywhere;
+}
+.idle-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.idle-actions .btn {
+  flex: 1;
+  min-width: 130px;
+}
+.idle-zones {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.idle-zones .destination {
+  padding: 22px 12px;
+}
+.idle-zones .destination h2 {
+  font-size: 15px;
+}
+.idle-zones .selected {
+  background: #e6c181;
+  border: 3px solid #795132;
+}
+.idle-return {
+  text-align: center;
+}
+.idle-return .cat-sprite {
+  margin: auto;
+}
+.idle-rewards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+}
+.idle-rewards strong {
+  padding: 12px;
+  background: #f6e1b4;
+  border: 1px solid #bc955b;
+  border-radius: 6px;
+}
+@media (max-width: 650px) {
+  .screen-tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .screen-tools button:last-child {
+    grid-column: 1/-1;
+  }
+  .idle-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .idle-zones {
+    grid-template-columns: 1fr;
+  }
+  .idle-stage-caption {
+    flex-wrap: wrap;
+  }
+  .idle-banner {
+    font-size: 11px;
+  }
+}

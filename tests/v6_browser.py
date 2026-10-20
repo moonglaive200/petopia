@@ -9,7 +9,7 @@ with sync_playwright() as p:
   values={'introSeen':True,'eventDay':1,'event':None,'weather':'sun','logs':[{'day':1,'text':'공통 기록'}]};values.update(o)
   page.evaluate('(o)=>{if(modal.open)modal.close();cleanupView();selectedSlot=0;slots[0]=E.normalize(o);Math.random=()=>.9;renderHome();}',values)
  def home():page.evaluate('renderHome()')
- def menu(k):page.locator(f'[data-menu="{k}"]').click()
+ def menu(k):page.locator('[data-utility="mart"]' if k=='mart' else f'[data-menu="{k}"]').click()
  def close():page.locator('dialog .btn').click();page.wait_for_timeout(100)
  def played(name):return page.evaluate('(name)=>played.some(a=>a.src.endsWith("/"+name+".mp3"))',name)
  # Real new-game onboarding and all fourteen story beats, in order.
@@ -24,7 +24,7 @@ with sync_playwright() as p:
   page.locator('#nextIntro').click()
  assert state()['introSeen'];assert page.evaluate('mediaLoops.size')==0
  # Home-only controls, adjacent brown romance, persistent daily random guide.
- seed();assert page.locator('.screen-tools button').count()==4;assert page.locator('[data-menu]').evaluate_all('(els)=>els.slice(0,2).map(e=>e.dataset.menu)')==['dungeon','romance'];assert page.locator('[data-menu="romance"].adventure').count()==1;assert page.locator('#nextGuide').count()==0
+ seed();assert page.locator('.screen-tools button').count()==5;assert page.locator('[data-menu]').evaluate_all('(els)=>els.slice(0,2).map(e=>e.dataset.menu)')==['dungeon','romance'];assert page.locator('[data-menu="romance"].adventure').count()==1;assert page.locator('#nextGuide').count()==0
  tip=page.locator('#guideText').inner_text();day=state()['guideDay']
  for k in ['romance','walk','work','dungeon','influencer','gambling','mart','bank']:
   menu(k);assert page.locator('.screen-tools').count()==0;assert page.locator('.game-shell>.activity-journal:last-child').count()==1;home();assert page.locator('#guideText').inner_text()==tip

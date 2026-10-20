@@ -73,7 +73,7 @@ function gameShell(content, back = renderHome) {
   cleanupView();
   const s = player();
   document.body.dataset.screen = "game";
-  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${back === showSlots ? dailyEventPanel(s) : ""}${content}${back === showSlots ? `<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="inventory">▤ 인벤토리</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton" ${!E.canSleep(s) ? "disabled" : ""} title="주인 기력 25 이하에서 잠들 수 있어">☾ 잠자기 · 기력 25 이하</button><button data-utility="settings">⚙ 설정</button></nav>` : ""}<section class="activity-journal" aria-label="냥생 기록"><h2>냥생 기록</h2><div class="daily-log" id="activityLog"></div></section></section>`;
+  app.innerHTML = `<section class="game-shell"><div class="game-top"><button class="back" id="gameBack">← ${back === showSlots ? "슬롯 선택" : "돌아가기"}</button><span class="save-label"></span><span class="day-label">${E.calendar(s.day).season} ${E.calendar(s.day).date} (${E.calendar(s.day).weekday}) <button id="calendarButton" aria-label="달력 열기">📅</button></span><div class="wallet"><span>◈ ${money(s.gold)} G</span><span>◆ ${s.diamonds}</span><span>주인 기력 ${s.energy}/100</span></div></div>${back === showSlots ? dailyEventPanel(s) : ""}${content}${back === showSlots ? `<nav class="screen-tools" aria-label="보조 메뉴"><button data-utility="mart">▤ 펫마트</button><button data-utility="inventory">▤ 인벤토리</button><button data-utility="hospital">✚ 펫병원</button><button id="dayButton" ${!E.canSleep(s) ? "disabled" : ""} title="주인 기력 25 이하에서 잠들 수 있어">☾ 잠자기 · 기력 25 이하</button><button data-utility="settings">⚙ 설정</button></nav>` : ""}<section class="activity-journal" aria-label="냥생 기록"><h2>냥생 기록</h2><div class="daily-log" id="activityLog"></div></section></section>`;
   document.querySelector(".save-label").textContent =
     `SLOT ${selectedSlot + 1}${s.ownerName ? " · " + s.ownerName + " 집사" : ""}`;
   document.querySelector("#gameBack").onclick = () => {
@@ -145,6 +145,7 @@ function renderHome() {
     `<div class="home-title"><div>${title("CHUNBAE’S LITTLE WORLD", "춘배의 방")}</div><span class="date-chip">${E.houses[s.house].name}</span></div><div class="pet-stage house-${s.house} ${s.weather === "rain" ? "raining" : ""}">${s.house === 0 ? `<div class="street-lamp"></div><div class="street-bag">▣</div><div class="street-paper">오늘의 냥보</div>` : ""}<div class="rain-layer"></div><div class="window-pixel"><span></span></div><div class="wall-picture">${["☁", "▣", "☂", "☀", "≈", "♛", "☾", "✦"][s.house]}</div><div class="speech">${s.hospital ? "집사야… 병원 좀…" : married ? "우리 둘이 같이 살아요. 집사는 출근해요." : "집사 이름으로 된 통장, 내가 지킨다."}</div><div class="home-cats">${spriteMarkup("chunbae", s.hospital ? "sad" : s.happiness > 80 ? "happy" : "normal", "breathing")}${married ? spriteMarkup(s.romance.kind, "happy", "breathing partner-at-home") : ""}</div><div class="floor-rug"></div><span class="stage-label">${married ? "춘배와 " + escapeLog(E.partnerName(s)) : "춘배 · 오늘도 함께"}</span></div><div class="status-strip stats-six"><div><small>레벨</small><strong>LV.${s.level}</strong><progress value="${s.xp}" max="${E.xpNeeded(s.level)}"></progress><span>${s.xp}/${E.xpNeeded(s.level)} XP</span></div><div><small>공격 / 방어</small><strong>${st.attack} / ${st.defense}</strong><span>체력 ${st.hp}</span></div><div><small>행복도</small><strong>${s.happiness}/100</strong><progress value="${s.happiness}" max="100"></progress><span class="happiness-bonus-note">수입 보너스 · 0~69: 없음<br>70~99: +20% · 100: +50%</span></div><div><small>유명세</small><strong>${money(s.followers + s.liveFollowers)}</strong><span>펫스타 + Live 팔로워</span></div><div><small>보유재화</small><strong class="gold-label">🪙 골드 ${money(s.gold)} G</strong><span class="diamond-label">💎 다이아 ${s.diamonds}개</span></div><div><small>수입 보너스</small><strong>+${(E.bonus(s) * 100).toFixed(1)}%</strong><span>유명세 × 행복도 × 연애 × 집<br>주인 일당 +${((1 + E.bonus(s)) * (1 + E.vehicleBonus(s)) * 100 - 100).toFixed(1)}%<br>탈것 추가 곱연산</span></div></div><div class="daily-strip"><span>던전 남음 ${1 - s.daily.dungeon}/1</span><span>힐링 남음 ${4 - s.daily.walk - s.daily.drive - s.daily.arcade - s.daily.nap}/4 · 낮잠 주말</span><span>펫스타 남음 ${1 - s.daily.star}/1${s.daily.star ? " · 오늘 완료" : ""}</span><span>Live ${Math.max(0, 3 - s.day + s.liveDay) ? `${3 - s.day + s.liveDay}일 후` : "가능"}</span></div><div class="section-heading"><h2>오늘의 냥생</h2><span>당일 기력 회복 불가</span></div><nav class="activity-grid eight-activities">${[
       ["dungeon", "⚔", "냥서바이벌", "하루 1회 · 기력 −50 · 행복도 20 이상"],
       ["romance", "♡", "연애", "메뉴 입장 무료 · 행동마다 기력 −25"],
+      ["idle", "⚑", "춘배 원정대", "자동사냥 · 오프라인 최대 8시간"],
       ["walk", "♧", "힐링하기", "각각 하루 1회 · 주말 낮잠 무료"],
       ["work", "▣", "주인 노동시키기", "근무 중에도 자유 활동 · 기력 −50"],
       [
@@ -154,7 +155,6 @@ function renderHome() {
         "하루 첫 활동 기력 −25 · 이후 추가 소모 없음",
       ],
       ["gambling", "♠", "도박하기", "장비 강화 · 카지노"],
-      ["mart", "▤", "펫마트", "펫대장간 · 츄르코너 · 펫오토"],
       ["bank", "♜", "펫은행", "대출 · 투자 · 집 사기"],
     ]
       .map(
@@ -166,6 +166,7 @@ function renderHome() {
   );
   const actions = {
     dungeon: renderDungeons,
+    idle: renderIdleHunt,
     walk: renderWalk,
     gambling: renderGambling,
     work: renderWork,
@@ -826,7 +827,7 @@ function renderInvest(type) {
   const items = type === "stock" ? E.companies : E.coins,
     book = type === "stock" ? s.stocks : s.coinHoldings;
   gameShell(
-    `${title("MARKET · DAY " + s.day, type === "stock" ? "펫주식 투자" : "펫코인 투자", type === "stock" ? "전일 대비 −30%~+30% (1G 단위 반올림) · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매수·매도 수수료 각각 2% · 소수 둘째 자리까지 거래" : "전일 대비 −99%~+200% (1G 단위 반올림) · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매도 수수료 4%")}<label class="field-label">거래 수량 · 1회 최대 1,000주/개<input id="tradeQty" type="number" min="${type === "stock" ? "0.01" : "1"}" step="${type === "stock" ? "0.01" : "1"}" max="1000" value="1"></label><div class="market-list">${items.map((item, i) => `<article class="market-row"><span><strong>${item.name}</strong><small>보유 ${type === "stock" ? (book[i] || 0).toFixed(2) : book[i] || 0}${type === "stock" ? "주" : "개"}</small>${listingInfo(s, type, i)}</span><b>${E.price(s, type, i)} G<small>${marketChange(s, type, i)}</small></b><div class="market-order"><button class="btn" data-trade="${i}:buy" ${tradeCapacity(s, type, i, "buy") === 0 ? "disabled" : ""}>매수</button><small class="trade-capacity" data-capacity="${i}:buy">매수 가능<br><strong>${type === "stock" ? tradeCapacity(s, type, i, "buy").toFixed(2) : money(tradeCapacity(s, type, i, "buy"))}${type === "stock" ? "주" : "개"}</strong></small></div><div class="market-order"><button class="btn" data-trade="${i}:sell" ${tradeCapacity(s, type, i, "sell") === 0 ? "disabled" : ""}>매도</button><small class="trade-capacity" data-capacity="${i}:sell">매도 가능<br><strong>${type === "stock" ? tradeCapacity(s, type, i, "sell").toFixed(2) : money(tradeCapacity(s, type, i, "sell"))}${type === "stock" ? "주" : "개"}</strong></small></div></article>`).join("")}</div>`,
+    `${title("MARKET · DAY " + s.day, type === "stock" ? "펫주식 투자" : "펫코인 투자", type === "stock" ? "기본 전일 대비 −30%~+30% · 떡상·떡락 이벤트는 추가 ±30% (각 1%) · 1G 단위 반올림 · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매수·매도 수수료 각각 2% · 소수 둘째 자리까지 거래" : "기본 전일 대비 −99%~+200% · 떡상 +200% / 떡락 −80% 이벤트 (각 1%) · 1G 단위 반올림 · 종목 가격 1G 이하 시 거래 정지 · 다음 날 보유분 전량 소멸 · 3일 뒤 기본가격 재상장 · 매도 수수료 4%")}<label class="field-label">거래 수량 · 1회 최대 1,000주/개<input id="tradeQty" type="number" min="${type === "stock" ? "0.01" : "1"}" step="${type === "stock" ? "0.01" : "1"}" max="1000" value="1"></label><div class="market-list">${items.map((item, i) => `<article class="market-row"><span><strong>${item.name}</strong><small>보유 ${type === "stock" ? (book[i] || 0).toFixed(2) : book[i] || 0}${type === "stock" ? "주" : "개"}</small>${listingInfo(s, type, i)}</span><b>${E.price(s, type, i)} G<small>${marketChange(s, type, i)}</small></b><div class="market-order"><button class="btn" data-trade="${i}:buy" ${tradeCapacity(s, type, i, "buy") === 0 ? "disabled" : ""}>매수</button><small class="trade-capacity" data-capacity="${i}:buy">매수 가능<br><strong>${type === "stock" ? tradeCapacity(s, type, i, "buy").toFixed(2) : money(tradeCapacity(s, type, i, "buy"))}${type === "stock" ? "주" : "개"}</strong></small></div><div class="market-order"><button class="btn" data-trade="${i}:sell" ${tradeCapacity(s, type, i, "sell") === 0 ? "disabled" : ""}>매도</button><small class="trade-capacity" data-capacity="${i}:sell">매도 가능<br><strong>${type === "stock" ? tradeCapacity(s, type, i, "sell").toFixed(2) : money(tradeCapacity(s, type, i, "sell"))}${type === "stock" ? "주" : "개"}</strong></small></div></article>`).join("")}</div>`,
     () => renderBank("spend"),
   );
   bind("trade", (v) => {
@@ -1163,6 +1164,10 @@ function dailyEventPanel(s) {
       "털 다듬기 · 기력 −25 · 행복도 +10",
       "골드 −10% · 기력 −75 · 행복도 −75 (발생 즉시 적용)",
       "목욕하기 · 기력 −50 · 행복도 −10",
+      "전체 주식 +30% · 거래 정지·상폐 제외",
+      "전체 주식 −30% · 거래 정지·상폐 제외",
+      "전체 코인 +200% · 거래 정지·상폐 제외",
+      "전체 코인 −80% · 거래 정지·상폐 제외",
     ];
   let controls = "";
   if (e && !e.resolved) {
@@ -1176,7 +1181,7 @@ function dailyEventPanel(s) {
       controls = `<button class="btn" data-event="care" ${s.energy < cost || !E.canAct(s) ? "disabled" : ""}>${e.id === 8 ? "손톱깎기" : e.id === 9 ? "털깎기" : "냥빨하기"} · 기력 −${cost}</button>`;
     }
   }
-  return `<div class="event-banner">${s.weather === "rain" ? "☂ 비 오는 날 (10%)" : "☀ 맑은 날 (90%)"} · ${e ? `${E.events[e.id]} (발생 확률 ${E.eventChances[e.id]}%)` : "평온한 하루 (47%)"}${e ? `<small class="event-tip">${tips[e.id]}${e.resolved ? " · 처리 완료" : ""}${e.effect ? "<br>" + e.effect : ""}</small>` : ""}${controls ? `<div class="choice-row">${controls}</div>` : ""}</div>`;
+  return `<div class="event-banner">${s.weather === "rain" ? "☂ 비 오는 날 (10%)" : "☀ 맑은 날 (90%)"} · ${e ? `${E.events[e.id]} (발생 확률 ${E.eventChances[e.id]}%)` : "평온한 하루 (43%)"}${e ? `<small class="event-tip">${tips[e.id]}${e.resolved ? " · 처리 완료" : ""}${e.effect ? "<br>" + e.effect : ""}</small>` : ""}${controls ? `<div class="choice-row">${controls}</div>` : ""}</div>`;
 }
 function refreshActivityLog() {
   const el = document.querySelector("#activityLog"),

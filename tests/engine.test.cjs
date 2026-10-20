@@ -255,7 +255,7 @@ test("daily company stock, passive income, housing mood and visible deltas settl
     ) /
       100;
   advance(s);
-  assert.equal(s.stocks[0], expected);
+  assert.ok(Math.abs(s.stocks[0] - expected) < 1e-8);
 });
 test("daily market ranges stay positive and within advertised bounds", () => {
   const s = fresh();

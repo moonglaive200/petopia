@@ -23,7 +23,7 @@ test('daily timing reservation, exact tolerance, reward ranges, duplicate settle
  const s=fresh();E.startTiming(s,'zero');const r=E.finishTiming(s,'zero',10,()=>0);assert.ok(r.success);assert.equal(r.diamonds,0);assert.equal(r.toys.length,0);
 });
 test('exact event distribution: illness1%, bath2%, grooming5% each, independent weather',()=>{
- const counts={none:0};for(let i=0;i<1000;i++){const s=fresh();let n=0;E.rollDay(s,()=>n++===0?.9:(i+.5)/1000);const id=s.event?.id??'none';counts[id]=(counts[id]||0)+1;assert.equal(s.weather,'sun');}for(let i=0;i<10;i++)assert.equal(counts[i],50);assert.equal(counts[10],10);assert.equal(counts[11],20);assert.equal(counts.none,470);
+ const counts={none:0};for(let i=0;i<1000;i++){const s=fresh();let n=0;E.rollDay(s,()=>n++===0?.9:(i+.5)/1000);const id=s.event?.id??'none';counts[id]=(counts[id]||0)+1;assert.equal(s.weather,'sun');}for(let i=0;i<10;i++)assert.equal(counts[i],50);assert.equal(counts[10],10);assert.equal(counts[11],20);assert.equal(counts.none,430);
 });
 test('illness applies once, clamps energy/mood, ignores negative gold; grooming costs actual energy once',()=>{
  const s=fresh({gold:1000,happiness:100});let n=0;E.rollDay(s,()=>n++===0?.9:.505);assert.equal(s.event.id,10);assert.equal(s.gold,900);assert.equal(s.energy,25);assert.equal(s.happiness,25);E.normalize(s);assert.equal(s.gold,900);assert.equal(s.energy,25);
