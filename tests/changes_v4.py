@@ -7,9 +7,9 @@ with sync_playwright() as p:
  page.goto('http://127.0.0.1:8000')
  page.evaluate('''()=>{selectedSlot=0;slots[0]=E.normalize({ownerName:'승식',introSeen:true,day:111,eventDay:111,weather:'rain',event:{id:7,resolved:false},gold:1e8,diamonds:100,workLevels:[3,1,1],staffLevels:[3,1,1],employees:[0],romance:{kind:0,stage:1,affection:3}});save();renderHome();}''')
  assert 'WINTER 27' in page.locator('.day-label').inner_text()
- assert page.locator('.stats-six>div').count()==6
+ assert page.locator('.home-stats>div').count()==3
  assert page.locator('.raining .rain-layer').is_visible()
- assert '골드' in page.locator('.gold-label').inner_text()
+ assert 'G' in page.locator('.wallet-gold').inner_text()
  page.locator('#calendarButton').click();assert page.locator('.calendar-grid>div').count()==28;assert '춘배 생일' in page.locator('.calendar-grid .today').inner_text();page.locator('dialog .btn').click()
  page.locator('[data-event="fight"]').click();assert page.evaluate('player().energy')==50;assert page.locator('[data-event="fight"]').count()==0
  page.screenshot(path='/tmp/petopia-v4-rain-home.png',full_page=True)

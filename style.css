@@ -5253,3 +5253,43 @@ dialog {
 .live-chat-messages {
   overflow-anchor: none;
 }
+/* Keep room life stats in a single row and put combat stats at dungeon entry. */
+.stats-six.home-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+.stats-six.combat-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  margin-bottom: 22px;
+}
+.home-stats strong {
+  overflow-wrap: anywhere;
+}
+.wallet span.wallet-gold,
+.wallet span.wallet-diamonds {
+  font-size: 16px;
+  font-weight: bold;
+  padding: 10px 12px;
+}
+.wallet span.wallet-gold {
+  color: #704609;
+}
+.wallet span.wallet-diamonds {
+  color: #125969;
+}
+@media (max-width: 650px) {
+  .status-strip.home-stats {
+    gap: 6px;
+  }
+  .status-strip.home-stats > div {
+    padding: 10px 8px;
+  }
+  .home-stats small,
+  .home-stats span {
+    font-size: 10px;
+  }
+  .wallet span.wallet-gold,
+  .wallet span.wallet-diamonds {
+    font-size: 14px;
+    padding: 9px 10px;
+  }
+}
