@@ -281,6 +281,7 @@
       guideDay: 0,
       guideTip: 0,
       idleHunt: null,
+      homeField: null,
       gearVersion: 0,
       gearUp: { weapon: {}, armor: {} },
       introSeen: true,

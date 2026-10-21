@@ -77,3 +77,8 @@ Other weapon effects remain synthesized, with their gain increased independently
 ## v0.7 expedition presentation
 
 - Three expedition backdrops, ground details, auto-attack strokes and HUD are drawn locally in Canvas/CSS. The view reuses the existing approved Chunbae walk atlas and monster atlas. No new external image, font or audio assets were introduced. Optional expedition attack audio reuses the user-supplied swing clip and respects the global mute control.
+
+## v0.8 walkable home field
+
+- The full-screen home terrain, furniture, trees, paths, weather and signs are custom Canvas drawings in `home-field.js`; geometry is defined in `home-field-model.js`. No additional third-party artwork was downloaded.
+- Walking Chunbae and the married cheese-cat companion reuse the existing character assets documented above. House upgrades change the generated scenery; the user-provided lobby background remains the title-screen artwork.

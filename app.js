@@ -98,7 +98,7 @@ applyBackground();
 function lobby() {
   if (typeof cleanupView === "function") cleanupView();
   document.body.dataset.screen = "lobby";
-  app.innerHTML = `<section class="hero"><div class="eyebrow">A VERY ORDINARY CAT LIFE</div><h1 class="logo">PETOPIA</h1><div class="wood-sub">춘배와 집사의 이상한 하루</div><nav class="menu" aria-label="메인 메뉴"><button class="btn primary" id="start">▷ 시작하기</button><button class="btn" id="settings">⚙ 설정</button><button class="btn" id="credits">♡ 크레딧</button></nav><p class="version">VER. 0.7.0 · 냥생은 실전이다</p></section>`;
+  app.innerHTML = `<section class="hero"><div class="eyebrow">A VERY ORDINARY CAT LIFE</div><h1 class="logo">PETOPIA</h1><div class="wood-sub">춘배와 집사의 이상한 하루</div><nav class="menu" aria-label="메인 메뉴"><button class="btn primary" id="start">▷ 시작하기</button><button class="btn" id="settings">⚙ 설정</button><button class="btn" id="credits">♡ 크레딧</button></nav><p class="version">VER. 0.8.0 · 냥생은 실전이다</p></section>`;
   document.querySelector("#start").onclick = () => {
     meow();
     showSlots();
@@ -494,7 +494,7 @@ function drawScene(t = 0) {
 }
 let last = 0;
 function frame(t) {
-  if (motion && t - last > 90) {
+  if (motion && document.body.dataset.view !== "field" && t - last > 90) {
     drawScene(t);
     last = t;
   }

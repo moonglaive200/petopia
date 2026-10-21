@@ -12,6 +12,7 @@ function cleanupView() {
     fn();
   }
   activeActivity = false;
+  delete document.body.dataset.view;
 }
 function leaveGame() {
   if (
@@ -138,73 +139,7 @@ function sleep() {
   });
 }
 function renderHome() {
-  const s = player(),
-    married = s.romance?.stage >= 2;
-  gameShell(
-    `<div class="home-title"><div>${title("CHUNBAE’S LITTLE WORLD", "춘배의 방")}</div><span class="date-chip">${E.houses[s.house].name}</span></div><div class="pet-stage house-${s.house} ${s.weather === "rain" ? "raining" : ""}">${s.house === 0 ? `<div class="street-lamp"></div><div class="street-bag">▣</div><div class="street-paper">오늘의 냥보</div>` : ""}<div class="rain-layer"></div><div class="window-pixel"><span></span></div><div class="wall-picture">${["☁", "▣", "☂", "☀", "≈", "♛", "☾", "✦"][s.house]}</div><div class="speech">${s.hospital ? "집사야… 병원 좀…" : married ? "우리 둘이 같이 살아요. 집사는 출근해요." : "집사 이름으로 된 통장, 내가 지킨다."}</div><div class="home-cats">${spriteMarkup("chunbae", s.hospital ? "sad" : s.happiness > 80 ? "happy" : "normal", "breathing")}${married ? spriteMarkup(s.romance.kind, "happy", "breathing partner-at-home") : ""}</div><div class="floor-rug"></div><div class="pet-stage-actions"><span class="stage-label">${married ? "춘배와 " + escapeLog(E.partnerName(s)) : "춘배 · 오늘도 함께"}</span><button class="btn pet-chunbae" id="petChunbae" ${s.daily.pet ? "disabled" : ""}>${s.daily.pet ? "♡ 오늘 쓰다듬기 완료" : "♡ 쓰다듬기 +5 · 하루 1번"}</button></div></div><div class="status-strip stats-six home-stats"><div><small>행복도</small><strong>${s.happiness}/100</strong><progress value="${s.happiness}" max="100"></progress><span class="happiness-bonus-note">수입 보너스 · 0~69: 없음<br>70~99: +20% · 100: +50%</span></div><div><small>유명세</small><strong>${money(s.followers + s.liveFollowers)}</strong><span>펫스타 + Live 팔로워</span></div><div><small>수입 보너스</small><strong>+${(E.bonus(s) * 100).toFixed(1)}%</strong><span>유명세 × 행복도 × 연애 × 집<br>주인 일당 +${((1 + E.bonus(s)) * (1 + E.vehicleBonus(s)) * 100 - 100).toFixed(1)}%<br>탈것 추가 곱연산</span></div></div><div class="daily-strip"><span>던전 남음 ${1 - s.daily.dungeon}/1</span><span>힐링 남음 ${4 - s.daily.walk - s.daily.drive - s.daily.arcade - s.daily.nap}/4 · 낮잠 주말</span><span>펫스타 남음 ${1 - s.daily.star}/1${s.daily.star ? " · 오늘 완료" : ""}</span><span>Live ${Math.max(0, 3 - s.day + s.liveDay) ? `${3 - s.day + s.liveDay}일 후` : "가능"}</span></div><div class="section-heading"><h2>오늘의 냥생</h2><span>당일 기력 회복 불가</span></div><nav class="activity-grid eight-activities">${[
-      ["dungeon", "⚔", "냥서바이벌", "하루 1회 · 기력 −50 · 행복도 20 이상"],
-      ["romance", "♡", "연애", "선물 기력 0 · 다른 행동 기력 −25"],
-      ["idle", "⚑", "춘배 원정대", "자동사냥 · 오프라인 최대 8시간"],
-      [
-        "influencer",
-        "✦",
-        "인플루언서냥",
-        "하루 첫 활동 기력 −25 · 이후 추가 소모 없음",
-      ],
-      ["work", "▣", "주인 노동시키기", "근무 중에도 자유 활동 · 기력 −50"],
-      ["walk", "♧", "힐링하기", "각각 하루 1회 · 주말 낮잠 무료"],
-      ["gambling", "♠", "도박하기", "장비 강화 · 카지노"],
-      ["bank", "♜", "펫은행", "대출 · 투자 · 집 사기"],
-    ]
-      .map(
-        ([id, icon, name, desc]) =>
-          `<button class="activity ${["dungeon", "romance"].includes(id) ? "adventure" : ""}" data-menu="${id}"><span class="activity-icon">${icon}</span><span><strong>${name}</strong><small>${desc}</small></span><span class="arrow">↗</span></button>`,
-      )
-      .join("")}</nav>`,
-    showSlots,
-  );
-  const actions = {
-    dungeon: renderDungeons,
-    idle: renderIdleHunt,
-    walk: renderWalk,
-    gambling: renderGambling,
-    work: renderWork,
-    romance: renderRomance,
-    influencer: renderInfluencer,
-    inventory: renderInventory,
-    mart: () => renderMart(),
-    bank: () => renderBank(),
-  };
-  bind("menu", (id) => actions[id]());
-  document.querySelector("#petChunbae").onclick = () => {
-    const gained = E.pet(s);
-    if (gained === null) return;
-    save();
-    renderHome();
-    catVoice("happy");
-    const stage = document.querySelector(".pet-stage");
-    stage.querySelector(".speech").textContent = "냐옹~ 집사 손이 제일 좋아!";
-    const hearts = document.createElement("span");
-    hearts.className = "petting-hearts";
-    hearts.setAttribute("aria-hidden", "true");
-    hearts.textContent = "♥ ♡ ♥";
-    stage.append(hearts);
-    setTimeout(() => hearts.remove(), 1200);
-    notice(
-      gained
-        ? `춘배 쓰다듬기 · 행복도 +${gained}`
-        : "춘배는 이미 최고로 행복해! (행복도 100)",
-    );
-  };
-  bind("event", (choice) => {
-    if (E.resolveEvent(s, choice)) {
-      catVoice("happy");
-      save();
-      renderHome();
-    } else notice("금화 또는 주인 기력이 부족해.");
-  });
-  const log = document.querySelector(".daily-log");
-  log.scrollTop = log.scrollHeight;
+  renderFieldHome();
 }
 function renderDungeons() {
   const s = player(),
